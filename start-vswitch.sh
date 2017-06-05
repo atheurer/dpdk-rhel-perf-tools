@@ -6,7 +6,7 @@ queueus=1 # queues: Number of queue-pairs (rx/tx) to use per device
 switch="ovs" # switch: Currently supported is: testpmd, ovs, linuxbridge, linuxrouter
 overlay="none" # overlay: Currently supported is: none (for all switch types) and vxlan (for linuxbridge and ovs)
 prefix="" # prefix: the path prepended to the calls to operate ovs.  use "" for ovs RPM and "/usr/local" for src built OVS
-dpdk_nic_kmod="vfio-pci" # dpdk_nic_bind: the kernel module to use when assigning a network device to a userspace program (DPDK application)
+dpdk_nic_kmod="vfio-pci" # dpdk-devbind: the kernel module to use when assigning a network device to a userspace program (DPDK application)
 dataplane="dpdk"
 use_ht="y"
 testpmd_ver="v17.05"
@@ -269,16 +269,16 @@ case $dataplane in
 	# bind the devices to dpdk module
 	for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do
 		driverctl unset-override $pci_dev
-		dpdk_nic_bind --unbind $pci_dev
-		dpdk_nic_bind --bind $kernel_nic_kmod $pci_dev
+		dpdk-devbind --unbind $pci_dev
+		dpdk-devbind --bind $kernel_nic_kmod $pci_dev
 		if [ -e /sys/bus/pci/devices/"$pci_dev"/net/ ]; then
 			eth_dev=`/bin/ls /sys/bus/pci/devices/"$pci_dev"/net/`
 			mac=`ip l show dev $eth_dev | grep link/ether | awk '{print $2}'`
 			macs="$macs $mac"
 			ip link set dev $eth_dev down
 		fi
-		dpdk_nic_bind --unbind $pci_dev
-		dpdk_nic_bind --bind $dpdk_nic_kmod $pci_dev
+		dpdk-devbind --unbind $pci_dev
+		dpdk-devbind --bind $dpdk_nic_kmod $pci_dev
 	done
 	;;
 	kernel)
@@ -286,8 +286,8 @@ case $dataplane in
 	eth_devs=""
 	for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do
 		driverctl unset-override $pci_dev
-		dpdk_nic_bind --unbind $pci_dev
-		dpdk_nic_bind --bind $kernel_nic_kmod $pci_dev
+		dpdk-devbind --unbind $pci_dev
+		dpdk-devbind --bind $kernel_nic_kmod $pci_dev
 		udevadm settle
 		if [ -e /sys/bus/pci/devices/"$pci_dev"/net/ ]; then
 			eth_dev=`/bin/ls /sys/bus/pci/devices/"$pci_dev"/net/`
