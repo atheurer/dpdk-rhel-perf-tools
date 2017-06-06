@@ -306,6 +306,7 @@ esac
 echo device macs: $macs
 	
 # configure the vSwitch
+echo configuring the vswitch: $switch
 case $switch in
 	linuxrouter)
 	case $topology in
