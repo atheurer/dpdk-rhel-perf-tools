@@ -265,9 +265,10 @@ case $dataplane in
 	fi
 	done
 
-	echo DPDK adapters: $pci_nics
+	echo DPDK adapters: $pci_devs
 	# bind the devices to dpdk module
 	for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do
+        echo pci_dev: $pci_dev
 		driverctl unset-override $pci_dev
 		dpdk-devbind --unbind $pci_dev
 		dpdk-devbind --bind $kernel_nic_kmod $pci_dev
