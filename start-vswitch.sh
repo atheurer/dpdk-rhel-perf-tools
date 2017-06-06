@@ -2,7 +2,7 @@
 
 # defaults
 topology="pp" # two physical devices on one switch
-queueus=1 # queues: Number of queue-pairs (rx/tx) to use per device
+queues=1 # queues: Number of queue-pairs (rx/tx) to use per device
 switch="ovs" # switch: Currently supported is: testpmd, ovs, linuxbridge, linuxrouter
 overlay="none" # overlay: Currently supported is: none (for all switch types) and vxlan (for linuxbridge and ovs)
 prefix="" # prefix: the path prepended to the calls to operate ovs.  use "" for ovs RPM and "/usr/local" for src built OVS
