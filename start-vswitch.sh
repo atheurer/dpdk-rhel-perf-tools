@@ -117,6 +117,24 @@ while true; do
 	esac
 done
 
+# check for software dependencies
+common_deps="lsof lspci bc dpdk-devbind driverctl udevadm ip screen"
+linuxbridge_deps="brctl"
+all_deps=""
+all_deps="$common_deps"
+if [ "$switch" == "linuxbridge" ]; then
+	all_deps="$all_deps $linuxbridge_deps"
+fi
+for i in $all_deps; do
+	if which $i >/dev/null 2>&1; then
+		continue
+	else
+		echo "You must have the following installed to run this script: $i"
+		echo "Please install first"
+		exit 1
+	fi
+done
+
 # make sure all of the pci devices used are exactly the same
 pci_dev_count=0
 prev_pci_desc=""
