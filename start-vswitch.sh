@@ -1,5 +1,17 @@
 #!/bin/bash
 
+# This script will start a vswitch of your choice, doing the following:
+# -use multi-queue (for DPDK)
+# -bind DPDK PMDs to optimal CPUs
+# -for pvp topologies, provide a list of optimal cpus available for the VM
+# configure a network overlay, like VxLAN
+
+# The following features are not implemented but would be nice to add:
+# -for ovs, configure x flows
+# -for a router, configure x routes
+# -configure VLAN
+# -configure a firewall
+
 # defaults
 topology="pp" # two physical devices on one switch
 queues=1 # queues: Number of queue-pairs (rx/tx) to use per device
