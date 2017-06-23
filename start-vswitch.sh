@@ -10,6 +10,7 @@ dpdk_nic_kmod="vfio-pci" # dpdk-devbind: the kernel module to use when assigning
 dataplane="dpdk"
 use_ht="y"
 testpmd_ver="v17.05"
+dpdk_path="/root/andrewt/dpdk"
 
 
 # Process options and arguments
@@ -134,7 +135,6 @@ function convert_cpu_range() {
 		if echo "$cpus" | grep -q -- "-"; then
 			cpus=`echo $cpus | sed -e 's/-/ /'`
 			cpus=`seq $cpus | sed -e 's/ /,/g'`
-			cpus_list="$cpus,$i"
 		fi
 		for cpu in $cpus; do
 			cpus_list="$cpus_list,$cpu"
@@ -212,9 +212,11 @@ function get_cpumask() {
 	local cpu_list=$1
 	local pmd_cpu_mask=0
 	for cpu in `echo $cpu_list | sed -e 's/,/ /'g`; do
-		pmd_cpu_mask=`echo "$pmd_cpu_mask + 2^$cpu" | bc`
+		bc_math="$bc_math + 2^$cpu"
 	done
-	printf "%x" $pmd_cpu_mask
+	bc_math=`echo $bc_math | sed -e 's/\+//'`
+	pmd_cpu_mask=`echo "obase=16; $bc_math" | bc`
+	echo "$pmd_cpu_mask"
 }
 
 
@@ -246,8 +248,14 @@ case $dataplane in
 	dev1=`echo $pci_devs | awk -F, '{print $1}'`
 	numa_node=`cat /sys/bus/pci/devices/"$dev1"/numa_node`
 	node_cpus=`cat /sys/devices/system/node/node$numa_node/cpulist`
+	echo "node_cpus is $node_cpus"
 	# convert to a list with 1 entry per cpu and no "-" for ranges
-	cpus_list=`convert_cpu_range $node_cpus`
+	echo about to call convert_cpu_range
+	cpus_list=`convert_cpu_range "$node_cpus"`
+	echo back from  convert_cpu_range
+	# skip the first  as it cannot be in isolcpus
+	cpus_list=`echo $cpus_list | sed -e 's/^[0-9]*,//'`
+	echo "cpus_list is $cpus_list"
 			
 	
 	rmmod vfio-pci
@@ -371,10 +379,6 @@ case $switch in
 		vpp_ports=2
 		vpp_startup_file=/etc/vpp/startup.conf
 		pmd_threads=`echo "$vpp_ports * $queues" | bc`
-		if [ $numa_node -eq 0 ]; then
-			# skip the first  as it cannot be in isolcpus
-			cpus_list=`echo $cpus_list | sed -e 's/^[0-9]*,//'`
-		fi
 		pmd_cpus=`get_pmd_cpus $cpus_list $queues $vpp_ports`
 		config="xconnect"
 		descriptors=2048
@@ -546,9 +550,11 @@ case $switch in
 			phy_br="phy-br-$i"
 			vhost_port="vhost-user-$i"
 			phys_port="dpdk$i"
+			set -x
 			$prefix/bin/ovs-vsctl --if-exists del-br $phy_br
 			$prefix/bin/ovs-vsctl add-br $phy_br -- set bridge $phy_br datapath_type=netdev
 			$prefix/bin/ovs-vsctl add-port $phy_br $phys_port -- set Interface $phys_port type=dpdk
+			set +x
 			if [ -z "$overlay" -o "$overlay" == "none" -o "$overlay" == "half-vxlan" -a $i -eq 1 ]; then
 				$prefix/bin/ovs-vsctl add-port $phy_br $vhost_port -- set Interface $vhost_port type=dpdkvhostuser
 				$prefix/bin/ovs-ofctl del-flows $phy_br
@@ -574,6 +580,9 @@ case $switch in
 				fi
 			fi
 		done
+		echo "using $queues queue(s) per port"
+		$prefix/bin/ovs-vsctl set interface dpdk0 options:n_rxq=$queues
+		$prefix/bin/ovs-vsctl set interface dpdk1 options:n_rxq=$queues
 		if [ "$kernel_nic_kmod" == "i40e" ]; then
 			echo "configuring XL710 devices with 2048 descriptors/queue"
 			ovs-vsctl set Interface dpdk0 options:n_txq_desc=2048
@@ -605,10 +614,6 @@ case $switch in
 	pmd_threads=`echo "$ovs_ports * $queues" | bc`
 	echo "using a total of $pmd_threads PMD threads"
 
-	if [ $numa_node -eq 0 ]; then
-		# skip the first  as it cannot be in isolcpus
-		cpus_list=`echo $cpus_list | sed -e 's/^[0-9]*,//'`
-	fi
 	echo cpus_list is [$cpus_list]
 	echo ovs_ports [$ovs_ports]
 	pmdcpus=`get_pmd_cpus $cpus_list $queues $ovs_ports`
@@ -625,10 +630,6 @@ case $switch in
 	;;
 
 	testpmd)
-	if [ $numa_node -eq 0 ]; then
-		# skip the first  as it cannot be in isolcpus
-		cpus_list=`echo $cpus_list | sed -e 's/^[0-9]*,//'`
-	fi
 	echo configuring testpmd with $topology
 	case $topology in
 		pp)
@@ -649,7 +650,7 @@ case $switch in
 		pmd_cpu_mask=`get_cpumask $pmd_cpus`
 		echo pmd_cpu_list is [$pmd_cpus]
 		echo pmd_cpu_mask is [$pmd_cpu_mask]
-		testpmd_cmd="/root/dpdk/build/$testpmd_ver/bin/testpmd -l $console_cpu,$pmd_cpus --socket-mem 1024,1024 -n 4\
+		testpmd_cmd="$dpdk_path/build/$testpmd_ver/bin/testpmd -l $console_cpu,$pmd_cpus --socket-mem 1024,1024 -n 4\
 		  --proc-type auto --file-prefix testpmd$i $pci_location_arg\
                   --\
 		  --numa --nb-cores=$pmd_threads\
@@ -677,7 +678,7 @@ case $switch in
 			pmd_cpu_mask=`get_cpumask $pmd_cpus`
 			echo pmd_cpu_list is [$pmd_cpus]
 			echo pmd_cpu_mask is [$pmd_cpu_mask]
-			testpmd_cmd="/root/dpdk/build/$testpmd_ver/bin/testpmd -l $console_cpu,$pmd_cpus --socket-mem 1024,1024 -n 4\
+			testpmd_cmd="$dpdk_path/build/$testpmd_ver/bin/testpmd -l $console_cpu,$pmd_cpus --socket-mem 1024,1024 -n 4\
 			  --proc-type auto --file-prefix testpmd$i -w $pci_dev --vdev eth_vhost0,iface=$vhost_port -- --numa --nb-cores=$pmd_threads\
 			  --nb-ports=2 --portmask=3 --auto-start --rxq=$queues --txq=$queues\
 			  --rxd=$rxd --txd=$txd >/tmp/testpmd-$i"
