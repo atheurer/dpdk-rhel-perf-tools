@@ -23,6 +23,7 @@ dataplane="dpdk"
 use_ht="y"
 testpmd_ver="v17.05"
 dpdk_path="/root/andrewt/dpdk"
+supported_switches="linuxbridge ovs linuxrouter vpp testpmd"
 
 
 # Process options and arguments
@@ -102,8 +103,19 @@ while true; do
 		shift
 		if [ -n "$1" ]; then
 			switch="$1"
-			echo switch: [$switch]
 			shift
+			ok=0
+			for i in $supported_switches; do
+				if [ "$switch" == "$i" ]; then
+					ok=1
+				fi
+			done
+			if [ $ok -eq 1 ]; then
+				echo switch: [$switch]
+			else
+				echo switch: [$switch] is not supported by this script
+				exit 1
+			fi
 		fi
 		;;
 		--)
