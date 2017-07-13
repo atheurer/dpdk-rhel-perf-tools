@@ -440,18 +440,22 @@ case $switch in
     		echo "    corelist-workers $pmd_cpus" >>$vpp_startup_file
 		echo "}" >>$vpp_startup_file
 		echo "dpdk {" >>$vpp_startup_file
+		echo "    dev default {" >>$vpp_startup_file
+		echo "        num-rx-queues $queues" >>$vpp_startup_file
+		echo "        num-tx-queues $queues" >>$vpp_startup_file
+		# fixup dpdk interface descriptors
+		if [ -n "${descriptors}" ]; then
+			echo "        num-rx-desc ${descriptors}" >>$vpp_startup_file
+			echo "        num-tx-desc ${descriptors}" >>$vpp_startup_file
+		fi
+		echo "    }" >>$vpp_startup_file
     		echo "    no-multi-seg" >>$vpp_startup_file
     		echo "    uio-driver vfio-pci" >>$vpp_startup_file
-    		echo "    socket-mem 1024,1024" >>$vpp_startup_file
 		avail_pci_devs="$pci_devs"
 		for i in `seq 0 1`; do
 			pci_dev=`echo $avail_pci_devs | awk -F, '{print $1}'`
 			avail_pci_devs=`echo $avail_pci_devs | sed -e s/^$pci_dev,//`
     			echo "    dev $pci_dev" >>$vpp_startup_file
-    			echo "    {" >>$vpp_startup_file
-       			echo "        num-rx-queues $queues" >>$vpp_startup_file
-       			echo "        num-tx-queues $queues" >>$vpp_startup_file
-    			echo "    }" >>$vpp_startup_file
 		done
     		echo "    num-mbufs 32768" >>$vpp_startup_file
 		echo "}" >>$vpp_startup_file
@@ -483,11 +487,6 @@ case $switch in
 		vppctl set interface l2 xconnect ${vpp_nic[1]} ${vpp_nic[0]}
 		vppctl set dpdk interface placement ${vpp_nic[0]} queue 0 thread 1
 		vppctl set dpdk interface placement ${vpp_nic[1]} queue 0 thread 2
-    		# fixup dpdk interface descriptors
-		if [ -n "${descriptors}" ]; then
-    			vppctl set dpdk interface descriptors ${vpp_nic[0]} rx ${descriptors} tx ${descriptors}
-    			vppctl set dpdk interface descriptors ${vpp_nic[1]} rx ${descriptors} tx ${descriptors}
-		fi
 		# bringup interfaces
 		vppctl set interface state ${vpp_nic[0]} up
 		vppctl set interface state ${vpp_nic[1]} up
