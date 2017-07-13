@@ -493,6 +493,11 @@ case $switch in
 		vppctl set interface state ${vpp_nic[1]} up
 		
 	esac
+
+	# query for some configuration details
+	vppctl show interface address
+	vppctl show threads
+	vppctl show dpdk interface placement
 	;;
 	ovs)
 	DB_SOCK="$prefix/var/run/openvswitch/db.sock"
