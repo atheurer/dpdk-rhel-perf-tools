@@ -15,7 +15,8 @@
 # defaults
 topology="pp" # two physical devices on one switch
 queues=1 # queues: Number of queue-pairs (rx/tx) to use per device
-switch="ovs" # switch: Currently supported is: testpmd, ovs, linuxbridge, linuxrouter
+switch="ovs" # switch: Currently supported is: testpmd, ovs, linuxbridge, linuxrouter, vpp
+switch_mode="default" # switch_mode: Currently supported list depends on $switch
 overlay="none" # overlay: Currently supported is: none (for all switch types) and vxlan (for linuxbridge and ovs)
 prefix="" # prefix: the path prepended to the calls to operate ovs.  use "" for ovs RPM and "/usr/local" for src built OVS
 dpdk_nic_kmod="vfio-pci" # dpdk-devbind: the kernel module to use when assigning a network device to a userspace program (DPDK application)
@@ -27,7 +28,7 @@ supported_switches="linuxbridge ovs linuxrouter vpp testpmd"
 
 
 # Process options and arguments
-opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "devices:,nr-queues:,use-ht:,overlay:,topology:,dataplane:,switch:" -n "getopt.sh" -- "$@")
+opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "devices:,nr-queues:,use-ht:,overlay:,topology:,dataplane:,switch:,switch-mode:" -n "getopt.sh" -- "$@")
 if [ $? -ne 0 ]; then
 	printf -- "$*\n"
 	printf "\n"
@@ -42,7 +43,13 @@ if [ $? -ne 0 ]; then
 	printf -- "\t\t             --overlay=[none|vxlan]     network overlay used, if any (not supported on all bridge types)\n"
 	printf -- "\t\t             --topology=str             pp (which is just 2 physical devices on same bridge) or pvp (which is 2 bridges, each with a phys port and a virtio port)\n"
 	printf -- "\t\t             --dataplane=str            dpdk or kernel\n"
-	printf -- "\t\t             --switch=str               testpmd, ovs, linuxbridge\n"
+	printf -- "\t\t             --switch=str               testpmd, ovs, vpp, linuxrouter, or linuxbridge\n"
+	printf -- "\t\t             --switch-mode=str          Mode that the selected switch operates in.  Modes differ between switches\n"
+	printf -- "\t\t                                        \tlinuxbridge: default\n"
+	printf -- "\t\t                                        \tlinuxrouter: default\n"
+	printf -- "\t\t                                        \ttestpmd:     default\n"
+	printf -- "\t\t                                        \tovs:         default/direct-flow-rule, l2-bridge\n"
+	printf -- "\t\t                                        \tvpp:         default/xconnect, l2-bridge\n"
 	exit 1
 fi
 echo opts: [$opts]
@@ -118,6 +125,14 @@ while true; do
 			fi
 		fi
 		;;
+		--switch-mode)
+		shift
+		if [ -n "$1" ]; then
+			switch_mode="$1"
+			shift
+			echo switch_mode: [$switch_mode]
+		fi
+		;;
 		--)
 		shift
 		break
@@ -128,6 +143,40 @@ while true; do
 		;;
 	esac
 done
+
+# validate switch modes
+case "${switch}" in
+	"linuxbridge"|"linuxrouter"|"testpmd")
+		case "${switch_mode}" in
+			"default")
+				;;
+			*)
+				echo "ERROR: switch=${switch} does not support switch_mode=${switch_mode}"
+				exit 1
+				;;
+		esac
+		;;
+	"ovs")
+		case "${switch_mode}" in
+			"default"|"direct-flow-rule"|"l2-bridge")
+				;;
+			*)
+				echo "ERROR: switch=${switch} does not support switch_mode=${switch_mode}"
+				exit 1
+				;;
+		esac
+		;;
+	"vpp")
+		case "${switch_mode}" in
+			"default"|"xconnect"|"l2-bridge")
+				;;
+			*)
+				echo "ERROR: switch=${switch} does not support switch_mode=${switch_mode}"
+				exit 1
+				;;
+		esac
+		;;
+esac
 
 # check for software dependencies
 common_deps="lsof lspci bc dpdk-devbind driverctl udevadm ip screen"
@@ -261,6 +310,38 @@ function get_cpumask() {
 	echo "$pmd_cpu_mask"
 }
 
+function set_ovs_bridge_mode() {
+	local bridge=$1
+	local switch_mode=$2
+
+	case "${switch_mode}" in
+		"l2-bridge")
+			$prefix/bin/ovs-ofctl add-flow ${bridge} action=NORMAL
+			;;
+		"default"|"direct-flow-rule")
+			$prefix/bin/ovs-ofctl add-flow ${bridge} "in_port=1,idle_timeout=0 actions=output:2"
+			$prefix/bin/ovs-ofctl add-flow ${bridge} "in_port=2,idle_timeout=0 actions=output:1"
+			;;
+	esac
+}
+
+function set_vpp_bridge_mode() {
+	local interface_1=$1
+	local interface_2=$2
+	local switch_mode=$3
+	local bridge=$4
+
+	case "${switch_mode}" in
+		"l2-bridge")
+			vppctl set interface l2 bridge ${interface_1} ${bridge}
+			vppctl set interface l2 bridge ${interface_2} ${bridge}
+			;;
+		"default"|"xconnect")
+			vppctl set interface l2 xconnect ${interface_1} ${interface_2}
+			vppctl set interface l2 xconnect ${interface_2} ${interface_1}
+			;;
+	esac
+}
 
 # kill any process using the 2 PCI devices
 echo Checking for an existing process using $pci_devs
@@ -272,17 +353,20 @@ for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do
 		kill $pids
 	fi
 done
-# completely kill and remove old ovs configuration
+# completely kill and remove old ovs/vpp configuration
 echo "stopping ovs"
 killall ovs-vswitchd
 killall ovsdb-server
 killall ovsdb-server ovs-vswitchd
+echo "stopping vpp"
+killall vpp
 sleep 3
 rm -rf $prefix/var/run/openvswitch/ovs-vswitchd.pid
 rm -rf $prefix/var/run/openvswitch/ovsdb-server.pid
 rm -rf $prefix/var/run/openvswitch/*
 rm -rf $prefix/etc/openvswitch/*db*
 rm -rf $prefix/var/log/openvswitch/*
+rm -rf $prefix/var/log/vpp/*
 
 # initialize the devices
 case $dataplane in
@@ -437,18 +521,22 @@ case $switch in
     		echo "    corelist-workers $pmd_cpus" >>$vpp_startup_file
 		echo "}" >>$vpp_startup_file
 		echo "dpdk {" >>$vpp_startup_file
+		echo "    dev default {" >>$vpp_startup_file
+		echo "        num-rx-queues $queues" >>$vpp_startup_file
+		echo "        num-tx-queues $queues" >>$vpp_startup_file
+		# fixup dpdk interface descriptors
+		if [ -n "${descriptors}" ]; then
+			echo "        num-rx-desc ${descriptors}" >>$vpp_startup_file
+			echo "        num-tx-desc ${descriptors}" >>$vpp_startup_file
+		fi
+		echo "    }" >>$vpp_startup_file
     		echo "    no-multi-seg" >>$vpp_startup_file
     		echo "    uio-driver vfio-pci" >>$vpp_startup_file
-    		echo "    socket-mem 1024,1024" >>$vpp_startup_file
 		avail_pci_devs="$pci_devs"
 		for i in `seq 0 1`; do
 			pci_dev=`echo $avail_pci_devs | awk -F, '{print $1}'`
 			avail_pci_devs=`echo $avail_pci_devs | sed -e s/^$pci_dev,//`
     			echo "    dev $pci_dev" >>$vpp_startup_file
-    			echo "    {" >>$vpp_startup_file
-       			echo "        num-rx-queues $queues" >>$vpp_startup_file
-       			echo "        num-tx-queues $queues" >>$vpp_startup_file
-    			echo "    }" >>$vpp_startup_file
 		done
     		echo "    num-mbufs 32768" >>$vpp_startup_file
 		echo "}" >>$vpp_startup_file
@@ -476,20 +564,19 @@ case $switch in
 			vpp_nic[$i]=`vppctl show interface | grep Ethernet$pci_dev_bus/$pci_dev_dev/$pci_dev_func | awk '{print $1}'`
 			echo vpp NIC: ${vpp_nic[$i]}
 		done
-		vppctl set interface l2 xconnect ${vpp_nic[0]} ${vpp_nic[1]}
-		vppctl set interface l2 xconnect ${vpp_nic[1]} ${vpp_nic[0]}
+		set_vpp_bridge_mode ${vpp_nic[0]} ${vpp_nic[1]} ${switch_mode} 10
 		vppctl set dpdk interface placement ${vpp_nic[0]} queue 0 thread 1
 		vppctl set dpdk interface placement ${vpp_nic[1]} queue 0 thread 2
-    		# fixup dpdk interface descriptors
-		if [ -n "${descriptors}" ]; then
-    			vppctl set dpdk interface descriptors ${vpp_nic[0]} rx ${descriptors} tx ${descriptors}
-    			vppctl set dpdk interface descriptors ${vpp_nic[1]} rx ${descriptors} tx ${descriptors}
-		fi
 		# bringup interfaces
 		vppctl set interface state ${vpp_nic[0]} up
 		vppctl set interface state ${vpp_nic[1]} up
 		
 	esac
+
+	# query for some configuration details
+	vppctl show interface address
+	vppctl show threads
+	vppctl show dpdk interface placement
 	;;
 	ovs)
 	DB_SOCK="$prefix/var/run/openvswitch/db.sock"
@@ -537,16 +624,14 @@ case $switch in
 		$prefix/bin/ovs-vsctl add-port ovsbr0 vhost-user1 -- set Interface vhost-user1 type=dpdkvhostuser
 		$prefix/bin/ovs-vsctl add-port ovsbr0 vhost-user3 -- set Interface vhost-user3 type=dpdkvhostuser
 		$prefix/bin/ovs-ofctl del-flows ovsbr0
-		$prefix/bin/ovs-ofctl add-flow ovsbr0 "in_port=1,idle_timeout=0 actions=output:2"
-		$prefix/bin/ovs-ofctl add-flow ovsbr0 "in_port=2,idle_timeout=0 actions=output:1"
+		set_ovs_bridge_mode ovsbr0 ${switch_mode}
 	
 		$prefix/bin/ovs-vsctl --if-exists del-br ovsbr1
 		$prefix/bin/ovs-vsctl add-br ovsbr1 -- set bridge ovsbr1 datapath_type=netdev
 		$prefix/bin/ovs-vsctl add-port ovsbr1 vhost-user2 -- set Interface vhost-user2 type=dpdkvhostuser
 		$prefix/bin/ovs-vsctl add-port ovsbr1 vhost-user4 -- set Interface vhost-user4 type=dpdkvhostuser
 		$prefix/bin/ovs-ofctl del-flows ovsbr1
-		$prefix/bin/ovs-ofctl add-flow ovsbr1 "in_port=1,idle_timeout=0 actions=output:2"
-		$prefix/bin/ovs-ofctl add-flow ovsbr1 "in_port=2,idle_timeout=0 actions=output:1"
+		set_ovs_bridge_mode ovsbr1 ${switch_mode}
 		ovs_ports=4
 		;;
 		"v")  # vm1 <-> vm1 
@@ -555,8 +640,7 @@ case $switch in
 		$prefix/bin/ovs-vsctl add-port ovsbr0 vhost-user1 -- set Interface vhost-user1 type=dpdkvhostuser
 		$prefix/bin/ovs-vsctl add-port ovsbr0 vhost-user2 -- set Interface vhost-user2 type=dpdkvhostuser
 		$prefix/bin/ovs-ofctl del-flows ovsbr0
-		$prefix/bin/ovs-ofctl add-flow ovsbr0 "in_port=1,idle_timeout=0 actions=output:2"
-		$prefix/bin/ovs-ofctl add-flow ovsbr0 "in_port=2,idle_timeout=0 actions=output:1"
+		set_ovs_bridge_mode ovsbr0 ${switch_mode}
 		ovs_ports=2
 		;;
 		# pvvp probably does not work
@@ -566,24 +650,21 @@ case $switch in
 		$prefix/bin/ovs-vsctl add-port ovsbr0 dpdk0 -- set Interface dpdk0 type=dpdk
 		$prefix/bin/ovs-vsctl add-port ovsbr0 vhost-user1 -- set Interface vhost-user1 type=dpdkvhostuser
 		$prefix/bin/ovs-ofctl del-flows ovsbr0
-		$prefix/bin/ovs-ofctl add-flow ovsbr0 "in_port=1,idle_timeout=0 actions=output:2"
-		$prefix/bin/ovs-ofctl add-flow ovsbr0 "in_port=2,idle_timeout=0 actions=output:1"
+		set_ovs_bridge_mode ovsbr0 ${switch_mode}
 	
 		$prefix/bin/ovs-vsctl --if-exists del-br ovsbr1
 		$prefix/bin/ovs-vsctl add-br ovsbr1 -- set bridge ovsbr1 datapath_type=netdev
 		$prefix/bin/ovs-vsctl add-port ovsbr1 vhost-user2 -- set Interface vhost-user2 type=dpdkvhostuser
 		$prefix/bin/ovs-vsctl add-port ovsbr1 vhost-user3 -- set Interface vhost-user3 type=dpdkvhostuser
 		$prefix/bin/ovs-ofctl del-flows ovsbr1
-		$prefix/bin/ovs-ofctl add-flow ovsbr1 "in_port=1,idle_timeout=0 actions=output:2"
-		$prefix/bin/ovs-ofctl add-flow ovsbr1 "in_port=2,idle_timeout=0 actions=output:1"
+		set_ovs_bridge_mode ovsbr1 ${switch_mode}
 	
 		$prefix/bin/ovs-vsctl --if-exists del-br ovsbr2
 		$prefix/bin/ovs-vsctl add-br ovsbr2 -- set bridge ovsbr2 datapath_type=netdev
 		$prefix/bin/ovs-vsctl add-port ovsbr2 dpdk1 -- set Interface dpdk1 type=dpdk
 		$prefix/bin/ovs-vsctl add-port ovsbr2 vhost-user4 -- set Interface vhost-user4 type=dpdkvhostuser
 		$prefix/bin/ovs-ofctl del-flows ovsbr2
-		$prefix/bin/ovs-ofctl add-flow ovsbr2 "in_port=1,idle_timeout=0 actions=output:2"
-		$prefix/bin/ovs-ofctl add-flow ovsbr2 "in_port=2,idle_timeout=0 actions=output:1"
+		set_ovs_bridge_mode ovsbr2 ${switch_mode}
 		ovs_ports=6
 		;;
 		"pvp")   # 10GbP1<-->VM1P1, VM1P2<-->10GbP2
@@ -600,8 +681,7 @@ case $switch in
 			if [ -z "$overlay" -o "$overlay" == "none" -o "$overlay" == "half-vxlan" -a $i -eq 1 ]; then
 				$prefix/bin/ovs-vsctl add-port $phy_br $vhost_port -- set Interface $vhost_port type=dpdkvhostuser
 				$prefix/bin/ovs-ofctl del-flows $phy_br
-				$prefix/bin/ovs-ofctl add-flow $phy_br "in_port=1,idle_timeout=0 actions=output:2"
-				$prefix/bin/ovs-ofctl add-flow $phy_br "in_port=2,idle_timeout=0 actions=output:1"
+				set_ovs_bridge_mode $phy_br ${switch_mode}
 			else
 				if [ "$overlay" == "vxlan" -o "$overlay" == "half-vxlan" -a $i -eq 0 ]; then
 					vxlan_br="vxlan-br-$i"
@@ -639,8 +719,7 @@ case $switch in
 		$prefix/bin/ovs-vsctl add-port ovsbr0 dpdk0 -- set Interface dpdk0 type=dpdk
 		$prefix/bin/ovs-vsctl add-port ovsbr0 dpdk1 -- set Interface dpdk1 type=dpdk
 		$prefix/bin/ovs-ofctl del-flows ovsbr0
-		$prefix/bin/ovs-ofctl add-flow ovsbr0 "in_port=1,idle_timeout=0 actions=output:2"
-		$prefix/bin/ovs-ofctl add-flow ovsbr0 "in_port=2,idle_timeout=0 actions=output:1"
+		set_ovs_bridge_mode ovsbr0 ${switch_mode}
 		echo "using $queues queue(s) per port"
 		$prefix/bin/ovs-vsctl set interface dpdk0 options:n_rxq=$queues
 		$prefix/bin/ovs-vsctl set interface dpdk1 options:n_rxq=$queues
