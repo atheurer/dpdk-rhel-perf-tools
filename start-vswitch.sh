@@ -272,17 +272,20 @@ for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do
 		kill $pids
 	fi
 done
-# completely kill and remove old ovs configuration
+# completely kill and remove old ovs/vpp configuration
 echo "stopping ovs"
 killall ovs-vswitchd
 killall ovsdb-server
 killall ovsdb-server ovs-vswitchd
+echo "stopping vpp"
+killall vpp
 sleep 3
 rm -rf $prefix/var/run/openvswitch/ovs-vswitchd.pid
 rm -rf $prefix/var/run/openvswitch/ovsdb-server.pid
 rm -rf $prefix/var/run/openvswitch/*
 rm -rf $prefix/etc/openvswitch/*db*
 rm -rf $prefix/var/log/openvswitch/*
+rm -rf $prefix/var/log/vpp/*
 
 # initialize the devices
 case $dataplane in
