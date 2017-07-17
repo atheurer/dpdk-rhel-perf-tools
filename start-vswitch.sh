@@ -24,10 +24,11 @@ use_ht="y"
 testpmd_ver="v17.05"
 dpdk_path="/root/andrewt/dpdk"
 supported_switches="linuxbridge ovs linuxrouter vpp testpmd"
+desc_override=""
 
 
 # Process options and arguments
-opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "devices:,nr-queues:,use-ht:,overlay:,topology:,dataplane:,switch:" -n "getopt.sh" -- "$@")
+opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "desc-override:,devices:,nr-queues:,use-ht:,overlay:,topology:,dataplane:,switch:" -n "getopt.sh" -- "$@")
 if [ $? -ne 0 ]; then
 	printf -- "$*\n"
 	printf "\n"
@@ -43,6 +44,7 @@ if [ $? -ne 0 ]; then
 	printf -- "\t\t             --topology=str             pp (which is just 2 physical devices on same bridge) or pvp (which is 2 bridges, each with a phys port and a virtio port)\n"
 	printf -- "\t\t             --dataplane=str            dpdk or kernel\n"
 	printf -- "\t\t             --switch=str               testpmd, ovs, linuxbridge\n"
+	printf -- "\t\t             --desc-override            override default size for descriptor size\n"
 	exit 1
 fi
 echo opts: [$opts]
@@ -96,6 +98,14 @@ while true; do
 		if [ -n "$1" ]; then
 			dataplane="$1"
 			echo dataplane: [$dataplane]
+			shift
+		fi
+		;;
+		--desc-override)
+		shift
+		if [ -n "$1" ]; then
+			desc_override="$1"
+			echo desc_override: [$desc_override]
 			shift
 		fi
 		;;
@@ -628,7 +638,16 @@ case $switch in
 		if [ "$kernel_nic_kmod" == "i40e" ]; then
 			echo "configuring XL710 devices with 2048 descriptors/queue"
 			ovs-vsctl set Interface dpdk0 options:n_txq_desc=2048
+			ovs-vsctl set Interface dpdk0 options:n_rxq_desc=2048
 			ovs-vsctl set Interface dpdk1 options:n_txq_desc=2048
+			ovs-vsctl set Interface dpdk1 options:n_rxq_desc=2048
+		fi
+		if [ ! -z "$desc_override" ]; then
+			echo "configuring devices with $desc_override descriptors/queue"
+			ovs-vsctl set Interface dpdk0 options:n_txq_desc=$desc_override
+			ovs-vsctl set Interface dpdk0 options:n_rxq_desc=$desc_override
+			ovs-vsctl set Interface dpdk1 options:n_txq_desc=$desc_override
+			ovs-vsctl set Interface dpdk1 options:n_rxq_desc=$desc_override
 		fi
 		ovs_ports=4
 		;;
@@ -648,6 +667,13 @@ case $switch in
 			echo "configuring XL710 devices with 2048 descriptors/queue"
 			ovs-vsctl set Interface dpdk0 options:n_txq_desc=2048
 			ovs-vsctl set Interface dpdk1 options:n_txq_desc=2048
+		fi
+		if [ ! -z "$desc_override" ]; then
+			echo "configuring devices with $desc_override descriptors/queue"
+			ovs-vsctl set Interface dpdk0 options:n_txq_desc=$desc_override
+			ovs-vsctl set Interface dpdk0 options:n_rxq_desc=$desc_override
+			ovs-vsctl set Interface dpdk1 options:n_txq_desc=$desc_override
+			ovs-vsctl set Interface dpdk1 options:n_rxq_desc=$desc_override
 		fi
 		ovs_ports=2
 	esac
