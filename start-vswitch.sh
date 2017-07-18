@@ -14,6 +14,12 @@
 
 # defaults
 topology="pp" # two physical devices on one switch
+	      # topology is desctibed by a list of 1 or more switches separated by commas
+	      # the supported interfaces on a switch are:
+	      # p: a physical port
+	      # v: a virtio-net "backend" port, like dpdkvhostuser or vhost-net (dependig on dataplane)
+	      # V: a virtio-net "frontend" port, like virtio-pci in a VM (not yet implemented)
+	      # P: a patch-port for OVS (not yet implemented)
 queues=1 # queues: Number of queue-pairs (rx/tx) to use per device
 switch="ovs" # switch: Currently supported is: testpmd, ovs, linuxbridge, linuxrouter, vpp
 switch_mode="default" # switch_mode: Currently supported list depends on $switch
@@ -492,7 +498,7 @@ case $switch in
 			brctl addif $phy_br $eth_dev
 		done
 		;;
-		"pvp")   # 10GbP1<-->VM1P1, VM1P2<-->10GbP2
+		"pvp|pv,vp")   # 10GbP1<-->VM1P1, VM1P2<-->10GbP2
 		# create the bridges/ports with 1 phys dev and 1 virt dev per bridge, to be used for 1 VM to forward packets
 		for i in `seq 0 1`; do
 			eth_dev=`echo $eth_devs | awk '{print $1}'`
@@ -799,7 +805,7 @@ case $switch in
 		screen -dmS testpmd-$i bash -c "$testpmd_cmd"
 		cpus_list=`subtract_cpus $cpus_list $pmd_cpus`
 		;;
-		pvp)
+		pvp|pv,vp)
 		mkdir -p /var/run/openvswitch
 		console_cpu=0
 		testpmd_ports=2
