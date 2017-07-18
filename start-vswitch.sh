@@ -384,6 +384,17 @@ case $dataplane in
 	dpdk)
 	dev1=`echo $pci_devs | awk -F, '{print $1}'`
 	numa_node=`cat /sys/bus/pci/devices/"$dev1"/numa_node`
+	if [ $numa_node -eq -1 ]; then
+		node_memory="1024"
+	else
+		for i in `seq 0 $((numa_node - 1))`; do
+			node_memory="$node_memory,0"
+		done
+		node_memory="$node_memory,1024"
+		node_memory=`echo $node_memory | sed -e s/^,//`
+	fi
+	echo "node memory is: $node_memory"
+	
 	node_cpus=`cat /sys/devices/system/node/node$numa_node/cpulist`
 	echo "node_cpus is $node_cpus"
 	# convert to a list with 1 entry per cpu and no "-" for ranges
@@ -605,12 +616,12 @@ case $switch in
 	if echo $ovs_ver | grep -q "^2\.6"; then
 		dpdk_opts=""
 		$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-init=true
-		$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-socket-mem="1024,1024"
+		$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-socket-mem="$node_memory"
 	else
-		dpdk_opts="--dpdk -n 4 --socket-mem 1024,1024 --"
+		dpdk_opts="--dpdk -n 4 --socket-mem $node_memory --"
 	fi
 	$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-init=true
-	$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-socket-mem="1024,1024"
+	$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-socket-mem="$node_memory"
 
 	/bin/rm -f /var/log/openvswitch/ovs-vswitchd.log
 	
@@ -778,7 +789,7 @@ case $switch in
 		pmd_cpu_mask=`get_cpumask $pmd_cpus`
 		echo pmd_cpu_list is [$pmd_cpus]
 		echo pmd_cpu_mask is [$pmd_cpu_mask]
-		testpmd_cmd="$dpdk_path/build/$testpmd_ver/bin/testpmd -l $console_cpu,$pmd_cpus --socket-mem 1024,1024 -n 4\
+		testpmd_cmd="$dpdk_path/build/$testpmd_ver/bin/testpmd -l $console_cpu,$pmd_cpus --socket-mem $node_memory -n 4\
 		  --proc-type auto --file-prefix testpmd$i $pci_location_arg\
                   --\
 		  --numa --nb-cores=$pmd_threads\
@@ -804,7 +815,7 @@ case $switch in
 			pmd_cpu_mask=`get_cpumask $pmd_cpus`
 			echo pmd_cpu_list is [$pmd_cpus]
 			echo pmd_cpu_mask is [$pmd_cpu_mask]
-			testpmd_cmd="$dpdk_path/build/$testpmd_ver/bin/testpmd -l $console_cpu,$pmd_cpus --socket-mem 1024,1024 -n 4\
+			testpmd_cmd="$dpdk_path/build/$testpmd_ver/bin/testpmd -l $console_cpu,$pmd_cpus --socket-mem $node_memory -n 4\
 			  --proc-type auto --file-prefix testpmd$i -w $pci_dev --vdev eth_vhost0,iface=$vhost_port -- --numa --nb-cores=$pmd_threads\
 			  --nb-ports=2 --portmask=3 --auto-start --rxq=$queues --txq=$queues\
 			  --rxd=$descriptors --txd=$descriptors >/tmp/testpmd-$i"
