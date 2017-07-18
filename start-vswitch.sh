@@ -628,7 +628,7 @@ case $switch in
 	
 	echo "configuring ovs with network topology: $topology"
 	case $topology in
-		"vv")  # VM1P1<-->VM2P1, VM1P2<-->VM2P2
+		"vv,vv")  # VM1P1<-->VM2P1, VM1P2<-->VM2P2
 		# create a bridge with 2 virt devs per bridge, to be used to connect to 2 VMs
 		$prefix/bin/ovs-vsctl --if-exists del-br ovsbr0
 		$prefix/bin/ovs-vsctl add-br ovsbr0 -- set bridge ovsbr0 datapath_type=netdev
@@ -655,7 +655,7 @@ case $switch in
 		ovs_ports=2
 		;;
 		# pvvp probably does not work
-		"pvvp")  # 10GbP1<-->VM1P1, VM1P2<-->VM2P2, VM2P1<-->10GbP2
+		pvvp|pv,vv,vp)  # 10GbP1<-->VM1P1, VM1P2<-->VM2P2, VM2P1<-->10GbP2
 		$prefix/bin/ovs-vsctl --if-exists del-br ovsbr0
 		$prefix/bin/ovs-vsctl add-br ovsbr0 -- set bridge ovsbr0 datapath_type=netdev
 		$prefix/bin/ovs-vsctl add-port ovsbr0 dpdk0 -- set Interface dpdk0 type=dpdk
@@ -678,7 +678,7 @@ case $switch in
 		set_ovs_bridge_mode ovsbr2 ${switch_mode}
 		ovs_ports=6
 		;;
-		"pvp")   # 10GbP1<-->VM1P1, VM1P2<-->10GbP2
+		pvp|pv,vp)   # 10GbP1<-->VM1P1, VM1P2<-->10GbP2
 		# create the bridges/ports with 1 phys dev and 1 virt dev per bridge, to be used for 1 VM to forward packets
 		for i in `seq 0 1`; do
 			phy_br="phy-br-$i"
