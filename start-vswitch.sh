@@ -213,6 +213,9 @@ for i in $all_deps; do
 	fi
 done
 
+# only run if selinux is disabled
+selinuxenabled && exit 1
+
 # make sure all of the pci devices used are exactly the same
 pci_dev_count=0
 prev_pci_desc=""
