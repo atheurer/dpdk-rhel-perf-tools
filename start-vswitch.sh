@@ -806,7 +806,7 @@ case $switch in
 		pmd_cpu_mask=`get_cpumask $pmd_cpus`
 		echo pmd_cpu_list is [$pmd_cpus]
 		echo pmd_cpu_mask is [$pmd_cpu_mask]
-		testpmd_cmd="numactl --cpunodebind $local_numa_node --membind $local_numa_node $dpdk_path/build/$testpmd_ver/bin/testpmd -l $console_cpu,$pmd_cpus --socket-mem $local_node_memory\
+		testpmd_cmd="$dpdk_path/build/$testpmd_ver/bin/testpmd -l $console_cpu,$pmd_cpus --socket-mem $all_nodes_memory\
 		  --proc-type auto --file-prefix testpmd$i $pci_location_arg\
                   --\
 		  --numa --nb-cores=$pmd_threads\
