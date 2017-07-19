@@ -34,6 +34,15 @@ supported_switches="linuxbridge ovs linuxrouter vpp testpmd"
 descriptors=2048 # use this as our default descriptor size
 desc_override="" # use to override the desriptor size of any of the vswitches here.  
 
+function exit_error() {
+	local error_message=$1
+	local error_code=$2
+	if [ -z "$error_code"] ; then
+		error_code=1
+	fi
+	echo "ERROR: $error_message"
+	exit $error_code
+}
 
 # Process options and arguments
 opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "desc-override:,devices:,nr-queues:,use-ht:,overlay:,topology:,dataplane:,switch:,switch-mode:" -n "getopt.sh" -- "$@")
@@ -59,7 +68,7 @@ if [ $? -ne 0 ]; then
 	printf -- "\t\t                                        \ttestpmd:     default\n"
 	printf -- "\t\t                                        \tovs:         default/direct-flow-rule, l2-bridge\n"
 	printf -- "\t\t                                        \tvpp:         default/xconnect, l2-bridge\n"
-	exit 1
+	exit_error ""
 fi
 echo opts: [$opts]
 eval set -- "$opts"
@@ -137,8 +146,7 @@ while true; do
 			if [ $ok -eq 1 ]; then
 				echo switch: [$switch]
 			else
-				echo switch: [$switch] is not supported by this script
-				exit 1
+				exit_error "switch: [$switch] is not supported by this script"
 			fi
 		fi
 		;;
@@ -168,8 +176,7 @@ case "${switch}" in
 			"default")
 				;;
 			*)
-				echo "ERROR: switch=${switch} does not support switch_mode=${switch_mode}"
-				exit 1
+				exit_error "switch=${switch} does not support switch_mode=${switch_mode}"
 				;;
 		esac
 		;;
@@ -178,8 +185,7 @@ case "${switch}" in
 			"default"|"direct-flow-rule"|"l2-bridge")
 				;;
 			*)
-				echo "ERROR: switch=${switch} does not support switch_mode=${switch_mode}"
-				exit 1
+				exit_error "switch=${switch} does not support switch_mode=${switch_mode}"
 				;;
 		esac
 		;;
@@ -188,8 +194,7 @@ case "${switch}" in
 			"default"|"xconnect"|"l2-bridge")
 				;;
 			*)
-				echo "ERROR: switch=${switch} does not support switch_mode=${switch_mode}"
-				exit 1
+				exit_error "switch=${switch} does not support switch_mode=${switch_mode}"
 				;;
 		esac
 		;;
@@ -207,14 +212,12 @@ for i in $all_deps; do
 	if which $i >/dev/null 2>&1; then
 		continue
 	else
-		echo "You must have the following installed to run this script: $i"
-		echo "Please install first"
-		exit 1
+		exit_error "You must have the following installed to run this script: $i.  Please install first"
 	fi
 done
 
 # only run if selinux is disabled
-selinuxenabled && exit 1
+selinuxenabled && exit_error "disable selinux before using this script"
 
 # make sure all of the pci devices used are exactly the same
 pci_dev_count=0
@@ -222,18 +225,13 @@ prev_pci_desc=""
 for this_pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do
 	pci_desc=`lspci -s $this_pci_dev | cut -d" " -f 2-`
 	if [ "$prev_pci_desc" != "" -a "$prev_pci_desc" != "$pci_desc" ]; then
-		echo "ERROR: PCI devices are not the exact same type"
-		echo "$prev_pci_desc"
-		echo "$pci_desc"
-		exit 1
+		exit_error "PCI devices are not the exact same type: $prev_pci_desc, $pci_desc"
 	fi
 	prev_pci_desc="$pci_desc"
 	((pci_dev_count++))
 done
 if [ $pci_dev_count -ne 2 ]; then
-	echo "ERROR: you must use 2 PCI devices"
-	echo "$pci_dev_count devices were specified"
-	exit 1
+	exit_error "you must use 2 PCI devices, you used: $pci_dev_count"
 fi
 kernel_nic_kmod=`lspci -k -s $this_pci_dev | grep "Kernel modules:" | awk -F": " '{print $2}'`
 
@@ -441,8 +439,7 @@ case $dataplane in
 		if modprobe -v $kmod; then
 			echo "loaded $kmod module"
 		else
-			echo "Failed to load $kmmod module, exiting"
-			exit 1
+			exit_error "Failed to load $kmmod module, exiting"
 		fi
 	fi
 	done
@@ -478,8 +475,7 @@ case $dataplane in
 			mac=`ip l show dev $eth_dev | grep link/ether | awk '{print $2}'`
 			macs="$macs $mac"
 		else
-			echo "Could not get kernel driver to init on device $pci_dev"
-			exit 1
+			exit_error "Could not get kernel driver to init on device $pci_dev"
 		fi
 	done
 	echo ethernet devices: $eth_devs
@@ -637,7 +633,7 @@ case $switch in
 	$prefix/bin/ovsdb-tool create $prefix/etc/openvswitch/conf.db /usr/share/openvswitch/vswitch.ovsschema
 	$prefix/sbin/ovsdb-server -v --remote=punix:$DB_SOCK \
     	--remote=db:Open_vSwitch,Open_vSwitch,manager_options \
-    	--pidfile --detach || exit 1
+    	--pidfile --detach || exit_error "failed to start ovsdb"
 
 	if echo $ovs_ver | grep -q "^2\.6"; then
 		dpdk_opts=""
@@ -656,9 +652,7 @@ case $switch in
 	sudo su -g qemu -c "umask 002; numactl --cpunodebind=$local_numa_node $prefix/sbin/ovs-vswitchd $dpdk_opts unix:$DB_SOCK --pidfile --log-file=/var/log/openvswitch/ovs-vswitchd.log --detach"
 	rc=$?
 	if [ $rc -ne 0 ]; then
-		echo openvswitch exit code: [$rc]
-		echo aborting since openvswitch did not start correctly
-		exit 1
+		exit_error "Aborting since openvswitch did not start correctly. Openvswitch exit code: [$rc]"
 	fi
 	
 	echo waiting for ovs to init
@@ -849,7 +843,7 @@ case $switch in
 				sleep 1
 				((count+=1))
 			done
-			chmod 777 $vhost_port || exit 1
+			chmod 777 $vhost_port || exit_error "could not chmod 777 $vhost_port"
 			ded_cpus_list=`subtract_cpus $ded_cpus_list $pmd_cpus`
 		done
 		;;
