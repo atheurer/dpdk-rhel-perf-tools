@@ -29,7 +29,7 @@ dpdk_nic_kmod="vfio-pci" # dpdk-devbind: the kernel module to use when assigning
 dataplane="dpdk"
 use_ht="y"
 testpmd_ver="v17.05"
-dpdk_path="/opt/dpdk"
+testpmd_path="/opt/dpdk/build/${testpmd_ver}/bin/testpmd"
 supported_switches="linuxbridge ovs linuxrouter vpp testpmd"
 descriptors=2048 # use this as our default descriptor size
 desc_override="" # use to override the desriptor size of any of the vswitches here.  
@@ -172,7 +172,7 @@ function set_vpp_bridge_mode() {
 }
 
 # Process options and arguments
-opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "desc-override:,devices:,nr-queues:,use-ht:,overlay:,topology:,dataplane:,switch:,switch-mode:" -n "getopt.sh" -- "$@")
+opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "desc-override:,devices:,nr-queues:,use-ht:,overlay:,topology:,dataplane:,switch:,switch-mode:,testpmd-path:" -n "getopt.sh" -- "$@")
 if [ $? -ne 0 ]; then
 	printf -- "$*\n"
 	printf "\n"
@@ -195,6 +195,7 @@ if [ $? -ne 0 ]; then
 	printf -- "\t\t                                        \ttestpmd:     default\n"
 	printf -- "\t\t                                        \tovs:         default/direct-flow-rule, l2-bridge\n"
 	printf -- "\t\t                                        \tvpp:         default/xconnect, l2-bridge\n"
+	printf -- "\t\t             --testpmd-path=str         override the default location for the testpmd binary (${testpmd_path})\n"
 	exit_error ""
 fi
 echo opts: [$opts]
@@ -283,6 +284,17 @@ while true; do
 			switch_mode="$1"
 			shift
 			echo switch_mode: [$switch_mode]
+		fi
+		;;
+		--testpmd-path)
+		shift
+		if [ -n "$1" ]; then
+			testpmd_path="$1"
+			shift
+			if [ ! -e ${testpmd_path} -o ! -x "${testpmd_path}" ]; then
+				exit_error "testpmd_path: [${testpmd_path}] does not exist or is not exexecutable"
+			fi
+			echo "testpmd_path: [${testpmd_path}]"
 		fi
 		;;
 		--)
@@ -806,7 +818,7 @@ case $switch in
 		pmd_cpu_mask=`get_cpumask $pmd_cpus`
 		echo pmd_cpu_list is [$pmd_cpus]
 		echo pmd_cpu_mask is [$pmd_cpu_mask]
-		testpmd_cmd="$dpdk_path/build/$testpmd_ver/bin/testpmd -l $console_cpu,$pmd_cpus --socket-mem $all_nodes_memory\
+		testpmd_cmd="${testpmd_path} -l $console_cpu,$pmd_cpus --socket-mem $all_nodes_memory\
 		  --proc-type auto --file-prefix testpmd$i $pci_location_arg\
                   --\
 		  --numa --nb-cores=$pmd_threads\
@@ -832,7 +844,7 @@ case $switch in
 			echo pmd_cpu_list is [$pmd_cpus]
 			echo pmd_cpu_mask is [$pmd_cpu_mask]
 			# testpmd does not like being restricted to a single NUMA node when using vhostuser, so memory from all nodes is allocated
-			testpmd_cmd="$dpdk_path/build/$testpmd_ver/bin/testpmd -l $console_cpu,$pmd_cpus --socket-mem $all_nodes_memory -n 4\
+			testpmd_cmd="${testpmd_path} -l $console_cpu,$pmd_cpus --socket-mem $all_nodes_memory -n 4\
 			  --proc-type auto --file-prefix testpmd$i -w $pci_dev --vdev eth_vhost0,iface=$vhost_port -- --nb-cores=$pmd_threads\
 			  --nb-ports=2 --portmask=3 --auto-start --rxq=$queues --txq=$queues\
 			  --rxd=$descriptors --txd=$descriptors >/tmp/testpmd-$i"
