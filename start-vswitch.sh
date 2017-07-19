@@ -44,6 +44,133 @@ function exit_error() {
 	exit $error_code
 }
 
+function convert_number_range() {
+	# converts a range of cpus, like "1-3,5" to a list, like "1,2,3,5"
+	local cpu_range=$1
+	local cpus_list=""
+	local cpus=""
+	for cpus in `echo "$cpu_range" | sed -e 's/,/ /g'`; do
+		if echo "$cpus" | grep -q -- "-"; then
+			cpus=`echo $cpus | sed -e 's/-/ /'`
+			cpus=`seq $cpus | sed -e 's/ /,/g'`
+		fi
+		for cpu in $cpus; do
+			cpus_list="$cpus_list,$cpu"
+		done
+	done
+	cpus_list=`echo $cpus_list | sed -e 's/^,//'`
+	echo "$cpus_list"
+}
+
+function subtract_cpus() {
+	local current_cpus=$1
+	local sub_cpus=$2
+	local current_cpus_set
+	local count
+	local sub_cpu_list=""
+	# for easier manipulation, convert the current_cpus string to a associative array
+	for i in `echo $current_cpus | sed -e 's/,/ /g'`; do
+		current_cpus_set["$i"]=1
+	done
+	for cpu in "${!current_cpus_set[@]}"; do
+		for sub_cpu in `echo $sub_cpus | sed -e 's/,/ /g'`; do
+			if [ "$sub_cpu" == "$cpu" ]; then
+				unset current_cpus_set[$sub_cpu]
+				break
+			fi
+		done
+	done
+	for cpu in "${!current_cpus_set[@]}"; do
+		sub_cpu_list="$sub_cpu_list,$cpu"
+	done
+	sub_cpu_list=`echo $sub_cpu_list | sed -e 's/^,//'`
+	echo "$sub_cpu_list"
+}
+
+
+function get_pmd_cpus() {
+	local avail_cpus=$1
+	local nr_queues=$2
+	local nr_devs=$3
+	local nr_pmd_threads=`echo "$nr_queues * $nr_devs" | bc`
+	local avail_cpus_set
+	local count
+	local pmd_cpu_list=""
+	# for easier manipulation, convert the avail_cpus string to a associative array
+	for i in `echo $avail_cpus | sed -e 's/,/ /g'`; do
+		avail_cpus_set["$i"]=1
+	done
+	if [ "$use_ht" == "n" ]; then
+		# when using 1 thread per core (higher per-PMD-thread throughput)
+		count=0
+		for cpu in "${!avail_cpus_set[@]}"; do
+			pmd_cpu_list="$pmd_cpu_list,$cpu"
+			unset avail_cpus_set[$cpu]
+			((count++))
+			[ $count -ge $nr_pmd_threads ] && break
+		done
+	else
+		# when using 2 threads per core (higher throuhgput/core)
+		count=0
+		for cpu in "${!avail_cpus_set[@]}"; do
+			pmd_cpu_hyperthreads=`cat /sys/devices/system/cpu/cpu$cpu/topology/thread_siblings_list`
+			pmd_cpu_hyperthreads=`convert_number_range $pmd_cpu_hyperthreads`
+			for cpu_thread in `echo $pmd_cpu_hyperthreads | sed -e 's/,/ /g'`; do
+				pmd_cpu_list="$pmd_cpu_list,$cpu_thread"
+				unset avail_cpus_set[$cpu_thread]
+				((count++))
+			done
+			[ $count -ge $nr_pmd_threads ] && break
+		done
+	fi
+	pmd_cpu_list=`echo $pmd_cpu_list | sed -e 's/^,//'`
+	echo "$pmd_cpu_list"
+}
+
+function get_cpumask() {
+	local cpu_list=$1
+	local pmd_cpu_mask=0
+	for cpu in `echo $cpu_list | sed -e 's/,/ /'g`; do
+		bc_math="$bc_math + 2^$cpu"
+	done
+	bc_math=`echo $bc_math | sed -e 's/\+//'`
+	pmd_cpu_mask=`echo "obase=16; $bc_math" | bc`
+	echo "$pmd_cpu_mask"
+}
+
+function set_ovs_bridge_mode() {
+	local bridge=$1
+	local switch_mode=$2
+
+	case "${switch_mode}" in
+		"l2-bridge")
+			$prefix/bin/ovs-ofctl add-flow ${bridge} action=NORMAL
+			;;
+		"default"|"direct-flow-rule")
+			$prefix/bin/ovs-ofctl add-flow ${bridge} "in_port=1,idle_timeout=0 actions=output:2"
+			$prefix/bin/ovs-ofctl add-flow ${bridge} "in_port=2,idle_timeout=0 actions=output:1"
+			;;
+	esac
+}
+
+function set_vpp_bridge_mode() {
+	local interface_1=$1
+	local interface_2=$2
+	local switch_mode=$3
+	local bridge=$4
+
+	case "${switch_mode}" in
+		"l2-bridge")
+			vppctl set interface l2 bridge ${interface_1} ${bridge}
+			vppctl set interface l2 bridge ${interface_2} ${bridge}
+			;;
+		"default"|"xconnect")
+			vppctl set interface l2 xconnect ${interface_1} ${interface_2}
+			vppctl set interface l2 xconnect ${interface_2} ${interface_1}
+			;;
+	esac
+}
+
 # Process options and arguments
 opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "desc-override:,devices:,nr-queues:,use-ht:,overlay:,topology:,dataplane:,switch:,switch-mode:" -n "getopt.sh" -- "$@")
 if [ $? -ne 0 ]; then
@@ -235,132 +362,6 @@ if [ $pci_dev_count -ne 2 ]; then
 fi
 kernel_nic_kmod=`lspci -k -s $this_pci_dev | grep "Kernel modules:" | awk -F": " '{print $2}'`
 
-function convert_number_range() {
-	# converts a range of cpus, like "1-3,5" to a list, like "1,2,3,5"
-	local cpu_range=$1
-	local cpus_list=""
-	local cpus=""
-	for cpus in `echo "$cpu_range" | sed -e 's/,/ /g'`; do
-		if echo "$cpus" | grep -q -- "-"; then
-			cpus=`echo $cpus | sed -e 's/-/ /'`
-			cpus=`seq $cpus | sed -e 's/ /,/g'`
-		fi
-		for cpu in $cpus; do
-			cpus_list="$cpus_list,$cpu"
-		done
-	done
-	cpus_list=`echo $cpus_list | sed -e 's/^,//'`
-	echo "$cpus_list"
-}
-
-function subtract_cpus() {
-	local current_cpus=$1
-	local sub_cpus=$2
-	local current_cpus_set
-	local count
-	local sub_cpu_list=""
-	# for easier manipulation, convert the current_cpus string to a associative array
-	for i in `echo $current_cpus | sed -e 's/,/ /g'`; do
-		current_cpus_set["$i"]=1
-	done
-	for cpu in "${!current_cpus_set[@]}"; do
-		for sub_cpu in `echo $sub_cpus | sed -e 's/,/ /g'`; do
-			if [ "$sub_cpu" == "$cpu" ]; then
-				unset current_cpus_set[$sub_cpu]
-				break
-			fi
-		done
-	done
-	for cpu in "${!current_cpus_set[@]}"; do
-		sub_cpu_list="$sub_cpu_list,$cpu"
-	done
-	sub_cpu_list=`echo $sub_cpu_list | sed -e 's/^,//'`
-	echo "$sub_cpu_list"
-}
-
-
-function get_pmd_cpus() {
-	local avail_cpus=$1
-	local nr_queues=$2
-	local nr_devs=$3
-	local nr_pmd_threads=`echo "$nr_queues * $nr_devs" | bc`
-	local avail_cpus_set
-	local count
-	local pmd_cpu_list=""
-	# for easier manipulation, convert the avail_cpus string to a associative array
-	for i in `echo $avail_cpus | sed -e 's/,/ /g'`; do
-		avail_cpus_set["$i"]=1
-	done
-	if [ "$use_ht" == "n" ]; then
-		# when using 1 thread per core (higher per-PMD-thread throughput)
-		count=0
-		for cpu in "${!avail_cpus_set[@]}"; do
-			pmd_cpu_list="$pmd_cpu_list,$cpu"
-			unset avail_cpus_set[$cpu]
-			((count++))
-			[ $count -ge $nr_pmd_threads ] && break
-		done
-	else
-		# when using 2 threads per core (higher throuhgput/core)
-		count=0
-		for cpu in "${!avail_cpus_set[@]}"; do
-			pmd_cpu_hyperthreads=`cat /sys/devices/system/cpu/cpu$cpu/topology/thread_siblings_list`
-			pmd_cpu_hyperthreads=`convert_number_range $pmd_cpu_hyperthreads`
-			for cpu_thread in `echo $pmd_cpu_hyperthreads | sed -e 's/,/ /g'`; do
-				pmd_cpu_list="$pmd_cpu_list,$cpu_thread"
-				unset avail_cpus_set[$cpu_thread]
-				((count++))
-			done
-			[ $count -ge $nr_pmd_threads ] && break
-		done
-	fi
-	pmd_cpu_list=`echo $pmd_cpu_list | sed -e 's/^,//'`
-	echo "$pmd_cpu_list"
-}
-
-function get_cpumask() {
-	local cpu_list=$1
-	local pmd_cpu_mask=0
-	for cpu in `echo $cpu_list | sed -e 's/,/ /'g`; do
-		bc_math="$bc_math + 2^$cpu"
-	done
-	bc_math=`echo $bc_math | sed -e 's/\+//'`
-	pmd_cpu_mask=`echo "obase=16; $bc_math" | bc`
-	echo "$pmd_cpu_mask"
-}
-
-function set_ovs_bridge_mode() {
-	local bridge=$1
-	local switch_mode=$2
-
-	case "${switch_mode}" in
-		"l2-bridge")
-			$prefix/bin/ovs-ofctl add-flow ${bridge} action=NORMAL
-			;;
-		"default"|"direct-flow-rule")
-			$prefix/bin/ovs-ofctl add-flow ${bridge} "in_port=1,idle_timeout=0 actions=output:2"
-			$prefix/bin/ovs-ofctl add-flow ${bridge} "in_port=2,idle_timeout=0 actions=output:1"
-			;;
-	esac
-}
-
-function set_vpp_bridge_mode() {
-	local interface_1=$1
-	local interface_2=$2
-	local switch_mode=$3
-	local bridge=$4
-
-	case "${switch_mode}" in
-		"l2-bridge")
-			vppctl set interface l2 bridge ${interface_1} ${bridge}
-			vppctl set interface l2 bridge ${interface_2} ${bridge}
-			;;
-		"default"|"xconnect")
-			vppctl set interface l2 xconnect ${interface_1} ${interface_2}
-			vppctl set interface l2 xconnect ${interface_2} ${interface_1}
-			;;
-	esac
-}
 
 # kill any process using the 2 PCI devices
 echo Checking for an existing process using $pci_devs
