@@ -23,6 +23,16 @@ topology="pp" # two physical devices on one switch
 queues=1 # queues: Number of queue-pairs (rx/tx) to use per device
 switch="ovs" # switch: Currently supported is: testpmd, ovs, linuxbridge, linuxrouter, vpp
 switch_mode="default" # switch_mode: Currently supported list depends on $switch
+numa_mode="strict" # numa_mode: (for DPDK vswitches only)
+			# strict:    All PMD threads for all phys and virt devices use memory and cpu only
+			#            from the numa node where the physical adapters are located.
+			#	     This implies the VMs must be on the same node.
+			# preferred: Just like 'strict', but the vswitch also has memory and in some cases
+			#            uses cpu from the non-local NUMA nodes.
+			# cross:     The PMD threads for all phys devices use memory and cpu from
+			#            the local NUMA node, but VMs are present on another NUMA node,
+			#            and so the PMD threads for those virt devices are also on
+			#            another NUMA node.
 overlay="none" # overlay: Currently supported is: none (for all switch types) and vxlan (for linuxbridge and ovs)
 prefix="" # prefix: the path prepended to the calls to operate ovs.  use "" for ovs RPM and "/usr/local" for src built OVS
 dpdk_nic_kmod="vfio-pci" # dpdk-devbind: the kernel module to use when assigning a network device to a userspace program (DPDK application)
@@ -172,7 +182,7 @@ function set_vpp_bridge_mode() {
 }
 
 # Process options and arguments
-opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "desc-override:,devices:,nr-queues:,use-ht:,overlay:,topology:,dataplane:,switch:,switch-mode:,testpmd-path:" -n "getopt.sh" -- "$@")
+opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "numa-mode:,desc-override:,devices:,nr-queues:,use-ht:,overlay:,topology:,dataplane:,switch:,switch-mode:,testpmd-path:" -n "getopt.sh" -- "$@")
 if [ $? -ne 0 ]; then
 	printf -- "$*\n"
 	printf "\n"
@@ -295,6 +305,14 @@ while true; do
 				exit_error "testpmd_path: [${testpmd_path}] does not exist or is not exexecutable"
 			fi
 			echo "testpmd_path: [${testpmd_path}]"
+		fi
+		;;
+		--numa-mode)
+		shift
+		if [ -n "$1" ]; then
+			numa_mode="$1"
+			shift
+			echo numa_mode: [$numa_mode]
 		fi
 		;;
 		--)
@@ -438,10 +456,11 @@ case $dataplane in
 	local_node_first_cpu_threads_list=`cat /sys/devices/system/cpu/cpu$local_node_first_cpu/topology/thread_siblings_list`
 	local_node_first_cpu_threads_list=`convert_number_range $local_node_first_cpu_threads_list`
 	ded_cpus_list=`subtract_cpus $local_node_cpus_list $local_node_first_cpu_threads_list`
-	#non_ded_cpus_list=`subtract_cpus $all_cpus_list $ded_cpus_list`
-	non_ded_cpus_list=$local_node_first_cpu_threads_list
+	all_nodes_non_ded_cpus_list=`subtract_cpus $all_cpus_list $ded_cpus_list`
+	local_node_non_ded_cpus_list=`subtract_cpus $local_node_cpus_list $ded_cpus_list`
 	echo "dedicated cpus_list is $ded_cpus_list"
-	echo "non-dedicated cpus list is $non_ded_cpus_list"
+	echo "local-node-non-dedicated cpus list is $local_node_non_ded_cpus_list"
+	echo "all-nodes-non-dedicated cpus list is $all_nodes_non_ded_cpus_list"
 	
 	rmmod vfio-pci
 	# load modules and bind Ethernet cards to dpdk modules
@@ -651,18 +670,29 @@ case $switch in
 	if echo $ovs_ver | grep -q "^2\.6"; then
 		dpdk_opts=""
 		$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-init=true
-		$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-socket-mem="$local_node_memory"
-		$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-lcore-mask="`get_cpumask $non_ded_cpus_list`"
+		case $numa_mode in
+			strict)
+			$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-socket-mem="$local_node_memory"
+			$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-lcore-mask="`get_cpumask $local_node_non_ded_cpus_list`"
+			;;
+			preferred)
+			$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-socket-mem="$all_nodes_memory"
+			$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-lcore-mask="`get_cpumask $all_nodes_non_ded_cpus_list`"
+			;;
+		esac
 	else
 		dpdk_opts="--dpdk -n 4 --socket-mem $local_node_memory --"
 	fi
-	$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-init=true
-	$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-socket-mem="$local_node_memory"
-
 	/bin/rm -f /var/log/openvswitch/ovs-vswitchd.log
-	
 	echo starting ovs-vswitchd
-	sudo su -g qemu -c "umask 002; numactl --cpunodebind=$local_numa_node $prefix/sbin/ovs-vswitchd $dpdk_opts unix:$DB_SOCK --pidfile --log-file=/var/log/openvswitch/ovs-vswitchd.log --detach"
+	case $numa_mode in
+		strict)
+		sudo su -g qemu -c "umask 002; numactl --cpunodebind=$local_numa_node $prefix/sbin/ovs-vswitchd $dpdk_opts unix:$DB_SOCK --pidfile --log-file=/var/log/openvswitch/ovs-vswitchd.log --detach"
+		;;
+		preferred)
+		sudo su -g qemu -c "umask 002; $prefix/sbin/ovs-vswitchd $dpdk_opts unix:$DB_SOCK --pidfile --log-file=/var/log/openvswitch/ovs-vswitchd.log --detach"
+		;;
+	esac
 	rc=$?
 	if [ $rc -ne 0 ]; then
 		exit_error "Aborting since openvswitch did not start correctly. Openvswitch exit code: [$rc]"
