@@ -181,6 +181,15 @@ function set_vpp_bridge_mode() {
 	esac
 }
 
+function vpp_create_vhost_user() {
+	local socket_name=/var/run/vpp/${1}
+
+	local device_name=$(vppctl create vhost socket ${socket_name} server)
+	chmod 777 ${socket_name}
+
+	echo "${device_name}"
+}
+
 # Process options and arguments
 opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "numa-mode:,desc-override:,devices:,nr-queues:,use-ht:,overlay:,topology:,dataplane:,switch:,switch-mode:,testpmd-path:" -n "getopt.sh" -- "$@")
 if [ $? -ne 0 ]; then
@@ -576,7 +585,14 @@ case $switch in
 		esac
 	;;
 	vpp)
-	vpp_ports=2
+	case ${topology} in
+		"pp")
+		vpp_ports=2
+		;;
+		"pvp"|"pv,vp")
+		vpp_ports=4
+		;;
+	esac
 	vpp_startup_file=/etc/vpp/startup.conf
 	pmd_threads=`echo "$vpp_ports * $queues" | bc`
 	pmd_cpus=`get_pmd_cpus $ded_cpus_list $queues $vpp_ports`
@@ -648,6 +664,20 @@ case $switch in
 		# bringup interfaces
 		vppctl set interface state ${vpp_nic[0]} up
 		vppctl set interface state ${vpp_nic[1]} up
+		;;
+		"pvp"|"pv,vp")   # 10GbP1<-->VM1P1, VM1P2<-->10GbP2
+		vpp_nic[2]=$(vpp_create_vhost_user vhost-user-0)
+		vpp_nic[3]=$(vpp_create_vhost_user vhost-user-1)
+
+		set_vpp_bridge_mode ${vpp_nic[0]} ${vpp_nic[2]} ${switch_mode} 10
+		set_vpp_bridge_mode ${vpp_nic[1]} ${vpp_nic[3]} ${switch_mode} 20
+
+		vppctl set dpdk interface placement ${vpp_nic[0]} queue 0 thread 3
+		vppctl set dpdk interface placement ${vpp_nic[1]} queue 0 thread 4
+
+		for nic in ${vpp_nic[@]}; do
+			vppctl set interface state $nic up
+		done
 		;;
 	esac
 
