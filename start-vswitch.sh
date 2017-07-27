@@ -43,6 +43,7 @@ testpmd_path="/opt/dpdk/build/${testpmd_ver}/bin/testpmd"
 supported_switches="linuxbridge ovs linuxrouter vpp testpmd"
 descriptors=2048 # use this as our default descriptor size
 desc_override="" # use to override the desriptor size of any of the vswitches here.  
+vpp_version="17.04"
 
 function exit_error() {
 	local error_message=$1
@@ -183,15 +184,24 @@ function set_vpp_bridge_mode() {
 
 function vpp_create_vhost_user() {
 	local socket_name=/var/run/vpp/${1}
+	local device_name=""
 
-	local device_name=$(vppctl create vhost socket ${socket_name} server)
+	case "${vpp_version}" in
+		"17.07")
+		device_name=$(vppctl create vhost-user socket ${socket_name} server)
+		;;
+		"17.04"|*)
+		device_name=$(vppctl create vhost socket ${socket_name} server)
+		;;
+	esac
+
 	chmod 777 ${socket_name}
 
 	echo "${device_name}"
 }
 
 # Process options and arguments
-opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "numa-mode:,desc-override:,devices:,nr-queues:,use-ht:,overlay:,topology:,dataplane:,switch:,switch-mode:,testpmd-path:" -n "getopt.sh" -- "$@")
+opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "numa-mode:,desc-override:,devices:,nr-queues:,use-ht:,overlay:,topology:,dataplane:,switch:,switch-mode:,testpmd-path:,vpp-version:" -n "getopt.sh" -- "$@")
 if [ $? -ne 0 ]; then
 	printf -- "$*\n"
 	printf "\n"
@@ -215,6 +225,7 @@ if [ $? -ne 0 ]; then
 	printf -- "\t\t                                        \tovs:         default/direct-flow-rule, l2-bridge\n"
 	printf -- "\t\t                                        \tvpp:         default/xconnect, l2-bridge\n"
 	printf -- "\t\t             --testpmd-path=str         override the default location for the testpmd binary (${testpmd_path})\n"
+	printf -- "\t\t             --vpp-version=str          control which VPP command set to use: 17.04 or 17.07 (default is ${vpp_version})\n"
 	exit_error ""
 fi
 echo opts: [$opts]
@@ -314,6 +325,14 @@ while true; do
 				exit_error "testpmd_path: [${testpmd_path}] does not exist or is not exexecutable"
 			fi
 			echo "testpmd_path: [${testpmd_path}]"
+		fi
+		;;
+		"--vpp-version")
+		shift
+		if [ -n "${1}" ]; then
+			vpp_version="${1}"
+			shift
+			echo "vpp_version: [${vpp_version}]"
 		fi
 		;;
 		--numa-mode)
@@ -638,7 +657,19 @@ case $switch in
 	echo "    gid vpp" >>$vpp_startup_file
 	echo "}" >>$vpp_startup_file
 	screen -dmS vpp /usr/bin/vpp -c /etc/vpp/startup.conf
-	sleep 10
+	echo -n "Waiting for VPP to be available"
+	while [ 1 ]; do
+		vpp_version_string=$(vppctl show version)
+		if echo ${vpp_version_string} | grep -q FileNotFoundError; then
+			echo -n "."
+			sleep 1
+		else
+			echo -n "done"
+			break
+		fi
+	done
+	echo
+	echo "VPP version: ${vpp_version_string}"
 	vpp_nics=`vppctl show interface | grep Ethernet | awk '{print $1}'`
 	echo "vpp nics: $vpp_nics"
 	avail_pci_devs="$pci_devs"
@@ -659,11 +690,17 @@ case $switch in
 	case $topology in
 		"pp")   # 10GbP1<-->10GbP2
 		set_vpp_bridge_mode ${vpp_nic[0]} ${vpp_nic[1]} ${switch_mode} 10
-		vppctl set dpdk interface placement ${vpp_nic[0]} queue 0 thread 1
-		vppctl set dpdk interface placement ${vpp_nic[1]} queue 0 thread 2
-		# bringup interfaces
-		vppctl set interface state ${vpp_nic[0]} up
-		vppctl set interface state ${vpp_nic[1]} up
+
+		case "${vpp_version}" in
+			"17.07")
+			vppctl set interface rx-placement ${vpp_nic[0]} queue 0 worker 0
+			vppctl set interface rx-placement ${vpp_nic[1]} queue 0 worker 1
+			;;
+			"17.04"|*)
+			vppctl set dpdk interface placement ${vpp_nic[0]} queue 0 thread 1
+			vppctl set dpdk interface placement ${vpp_nic[1]} queue 0 thread 2
+			;;
+		esac
 		;;
 		"pvp"|"pv,vp")   # 10GbP1<-->VM1P1, VM1P2<-->10GbP2
 		vpp_nic[2]=$(vpp_create_vhost_user vhost-user-0)
@@ -672,19 +709,36 @@ case $switch in
 		set_vpp_bridge_mode ${vpp_nic[0]} ${vpp_nic[2]} ${switch_mode} 10
 		set_vpp_bridge_mode ${vpp_nic[1]} ${vpp_nic[3]} ${switch_mode} 20
 
-		vppctl set dpdk interface placement ${vpp_nic[0]} queue 0 thread 3
-		vppctl set dpdk interface placement ${vpp_nic[1]} queue 0 thread 4
-
-		for nic in ${vpp_nic[@]}; do
-			vppctl set interface state $nic up
-		done
+		case "${vpp_version}" in
+			"17.07")
+			vppctl set interface rx-placement ${vpp_nic[0]} queue 0 worker 0
+			vppctl set interface rx-placement ${vpp_nic[1]} queue 0 worker 1
+			;;
+			"17.04"|*)
+			vppctl set dpdk interface placement ${vpp_nic[0]} queue 0 thread 3
+			vppctl set dpdk interface placement ${vpp_nic[1]} queue 0 thread 4
+			;;
+		esac
 		;;
 	esac
 
+	for nic in ${vpp_nic[@]}; do
+		echo "Bringing VPP interface ${nic} online"
+		vppctl set interface state ${nic} up
+	done
+
 	# query for some configuration details
+	vppctl show interface
 	vppctl show interface address
 	vppctl show threads
-	vppctl show dpdk interface placement
+	case "${vpp_version}" in
+		"17.07")
+		vppctl show interface rx-placement
+		;;
+		"17.04"|*)
+		vppctl show dpdk interface placement
+		;;
+	esac
 	;;
 	ovs)
 	DB_SOCK="$prefix/var/run/openvswitch/db.sock"
