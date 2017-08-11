@@ -456,7 +456,7 @@ case $dataplane in
 		all_nodes_memory="1024"
 	else
 		for i in `seq 0 $((local_numa_node - 1))`; do
-			local_node_memory="$node_memory,0"
+			local_node_memory="$local_node_memory,0"
 		done
 		local_node_memory="$local_node_memory,1024"
 		local_node_memory=`echo $local_node_memory | sed -e s/^,//`
