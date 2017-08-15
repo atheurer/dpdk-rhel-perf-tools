@@ -658,7 +658,20 @@ case $switch in
 	echo "}" >>$vpp_startup_file
 	screen -dmS vpp /usr/bin/vpp -c /etc/vpp/startup.conf
 	echo -n "Waiting for VPP to be available"
+	case "${vpp_version}" in
+		"17.04")
+		# if a command is submitted to VPP 17.04 too quickly
+		# it might never return, so delay a bit
+		for i in `seq 1 10`; do
+		    echo -n "."
+		    sleep 1
+		done
+		;;
+	esac
 	while [ 1 ]; do
+		# VPP 17.04 and earlier will block here and wait until
+		# the command is accepted.  VPP 17.07 will return with
+		# an error immediately until the daemon is ready
 		vpp_version_string=$(vppctl show version)
 		if echo ${vpp_version_string} | grep -q FileNotFoundError; then
 			echo -n "."
