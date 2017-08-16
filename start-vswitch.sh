@@ -32,7 +32,10 @@ numa_mode="strict" # numa_mode: (for DPDK vswitches only)
 			# cross:     The PMD threads for all phys devices use memory and cpu from
 			#            the local NUMA node, but VMs are present on another NUMA node,
 			#            and so the PMD threads for those virt devices are also on
-			#            another NUMA node.
+			#            another NUMA node.  If cross is specified, a cross_numa_node
+			#            must be specified that will be used for the vhost interfaces.
+cross_numa_node=""
+
 overlay="none" # overlay: Currently supported is: none (for all switch types) and vxlan (for linuxbridge and ovs)
 prefix="" # prefix: the path prepended to the calls to operate ovs.  use "" for ovs RPM and "/usr/local" for src built OVS
 dpdk_nic_kmod="vfio-pci" # dpdk-devbind: the kernel module to use when assigning a network device to a userspace program (DPDK application)
@@ -201,7 +204,7 @@ function vpp_create_vhost_user() {
 }
 
 # Process options and arguments
-opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "numa-mode:,desc-override:,devices:,nr-queues:,use-ht:,overlay:,topology:,dataplane:,switch:,switch-mode:,testpmd-path:,vpp-version:" -n "getopt.sh" -- "$@")
+opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "cross-numa-node:,numa-mode:,desc-override:,devices:,nr-queues:,use-ht:,overlay:,topology:,dataplane:,switch:,switch-mode:,testpmd-path:,vpp-version:" -n "getopt.sh" -- "$@")
 if [ $? -ne 0 ]; then
 	printf -- "$*\n"
 	printf "\n"
@@ -343,6 +346,14 @@ while true; do
 			echo numa_mode: [$numa_mode]
 		fi
 		;;
+		--cross-numa-node)
+		shift
+		if [ -n "$1" ]; then
+			cross_numa_node="$1"
+			shift
+			echo cross_numa_node: [$cross_numa_node]
+		fi
+		;;
 		--)
 		shift
 		break
@@ -353,6 +364,10 @@ while true; do
 		;;
 	esac
 done
+
+if [ "cross" == "$numa_mode" ] && [ -z "$cross_numa_node" ]; then
+	exit_error "When using --numa-mode=cross, the desired cross destination NUMA node must be specified via --cross-numa-node"
+fi
 
 # validate switch modes
 case "${switch}" in
@@ -455,23 +470,71 @@ case $dataplane in
 		local_node_memory="1024"
 		all_nodes_memory="1024"
 	else
-		for i in `seq 0 $((local_numa_node - 1))`; do
-			local_node_memory="$node_memory,0"
-		done
-		local_node_memory="$local_node_memory,1024"
-		local_node_memory=`echo $local_node_memory | sed -e s/^,//`
 		all_nodes=`cat /sys/devices/system/node/has_memory`
 		all_nodes=`convert_number_range $all_nodes`
 		echo all_nodes: $all_nodes
+
 		for i in `echo $all_nodes | sed -e 's/,/ /g'`; do
 			echo node: $i
+			if [ $i -ne $((local_numa_node)) ]; then
+				local_node_memory="$local_node_memory,0"
+			fi
+
+			if [ $i -eq $((local_numa_node)) ]; then
+				local_node_memory="$local_node_memory,1024"
+			fi
+
 			all_nodes_memory="$all_nodes_memory,1024"
 		done
+		local_node_memory=`echo $local_node_memory | sed -e s/^,//`
 		all_nodes_memory=`echo $all_nodes_memory | sed -e s/^,//`
 	fi
 	echo "local node memory is: $local_node_memory"
 	echo "all nodes memory is: $all_nodes_memory"
+
+	# Get memory for cross virtual intefaces	
+	if [ "cross" == "$numa_mode" ]; then
+		first_node="$( cut -d ',' -f 1 <<< "$all_nodes" )"
+		last_node=${all_nodes:(-1)}
+
+		if [ $((cross_numa_node)) -lt $((first_node)) ]; then
+			exit_error "cross_numa_node value $cross_numa_node is less than first NUMA node $first_node"
+		fi
+		if [ $((cross_numa_node)) -gt $((last_node)) ]; then
+			exit_error "cross_numa_node value $cross_numa_node is greater value than last NUMA node $last_node"
+		fi
+		if [ $((cross_numa_node)) -eq $((local_numa_node)) ]; then
+			exit_error "cross_numa_node value $cross_numa_node is equal to value of local NUMA node $local_numa_node.  This is not the test you are looking for..."
+		fi
+		for i in `echo $all_nodes | sed -e 's/,/ /g'`; do
+			if [ $i -ne $((cross_numa_node)) ]; then
+				cross_node_memory="$cross_node_memory,0"
+			fi
+
+			if [ $i -eq $((cross_numa_node)) ]; then
+				cross_node_memory="$cross_node_memory,1024"
+			fi
+		done
+		cross_node_memory=`echo $cross_node_memory | sed -e s/^,//`
+		echo "cross_node_memory=$cross_node_memory"
+		j=1
+		for i in `echo $all_nodes | sed -e 's/,/ /g'`; do
+			local_node_value=""
+			local_node_value="$( cut -d ',' -f $((j)) <<< "$local_node_memory" )"
+			cross_node_value=""
+			cross_node_value="$( cut -d ',' -f $((j)) <<< "$cross_node_memory" )"
+			j=$((j))+1
+			local_and_cross_node_value="$((cross_node_value+local_node_value))"
+			local_and_cross_node_memory="$local_and_cross_node_memory,$local_and_cross_node_value"		
+		done
+		local_and_cross_node_memory=`echo $local_and_cross_node_memory | sed -e s/^,//`
+		echo "local_and_cross_node_memory=$local_and_cross_node_memory"
+	fi
 	
+	
+	echo "first_node=$first_node"
+	echo "last_node=$last_node"
+	exit 0	
 	all_cpus_list=`cat /sys/devices/system/cpu/online`
 	all_cpus_list=`convert_number_range $all_cpus_list`
 	local_node_cpus_list=`cat /sys/devices/system/node/node$local_numa_node/cpulist`
