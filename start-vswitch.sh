@@ -425,7 +425,7 @@ kernel_nic_kmod=`lspci -k -s $this_pci_dev | grep "Kernel modules:" | awk -F": "
 echo Checking for an existing process using $pci_devs
 for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do
 	iommu_group=`readlink /sys/bus/pci/devices/$pci_dev/iommu_group | awk -Fiommu_groups/ '{print $2}'`
-	pids=`lsof | grep -- "/dev/vfio/$iommu_group" | awk '{print $2}' | sort | uniq`
+	pids=`lsof -n -T -X | grep -- "/dev/vfio/$iommu_group" | awk '{print $2}' | sort | uniq`
 	if [ ! -z "$pids" ]; then
 		echo killing PID $pids, which is using device $pci_dev
 		kill $pids
