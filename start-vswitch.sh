@@ -950,6 +950,10 @@ case $switch in
 	;;
 
 	testpmd)
+	if [ ! -e ${testpmd_path} -o ! -x "${testpmd_path}" ]; then
+		exit_error "testpmd_path: [${testpmd_path}] does not exist or is not exexecutable"
+	fi
+	echo "testpmd_path: [${testpmd_path}]"
 	echo configuring testpmd with $topology
 	case $topology in
 		pp)
