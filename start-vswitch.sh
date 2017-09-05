@@ -574,7 +574,7 @@ case $switch in
 			brctl addif $phy_br $eth_dev
 		done
 		;;
-		"pvp|pv,vp")   # 10GbP1<-->VM1P1, VM1P2<-->10GbP2
+		pvp|pv,vp)   # 10GbP1<-->VM1P1, VM1P2<-->10GbP2
 		# create the bridges/ports with 1 phys dev and 1 virt dev per bridge, to be used for 1 VM to forward packets
 		for i in `seq 0 1`; do
 			eth_dev=`echo $eth_devs | awk '{print $1}'`
@@ -595,8 +595,11 @@ case $switch in
 				ip l set dev $vxlan_br up
 				brctl addif $vxlan_br $vxlan_port
 			else # no overlay
-				brctl delbr $phy_br
+				phy_br="phy-br-$i"
+				brctl show | grep -q $phy_br &&brctl delbr $phy_br
 				brctl addbr $phy_br
+				ip l set dev $phy_br up
+				ip l set dev $eth_dev up
 				brctl addif $phy_br $eth_dev
 			fi
 		done
