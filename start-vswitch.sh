@@ -408,7 +408,7 @@ selinuxenabled && exit_error "disable selinux before using this script"
 pci_dev_count=0
 prev_pci_desc=""
 for this_pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do
-	pci_desc=`lspci -s $this_pci_dev | cut -d" " -f 2- | cut -d" (" -f -1`
+	pci_desc=`lspci -s $this_pci_dev | cut -d" " -f 2- | sed -s 's/ (.*$//'`
 	if [ "$prev_pci_desc" != "" -a "$prev_pci_desc" != "$pci_desc" ]; then
 		exit_error "PCI devices are not the exact same type: $prev_pci_desc, $pci_desc"
 	fi
