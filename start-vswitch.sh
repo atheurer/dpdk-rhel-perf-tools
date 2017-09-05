@@ -438,6 +438,8 @@ killall ovsdb-server
 killall ovsdb-server ovs-vswitchd
 echo "stopping vpp"
 killall vpp
+echo "stopping testpmd"
+killall testpmd
 sleep 3
 rm -rf $prefix/var/run/openvswitch/ovs-vswitchd.pid
 rm -rf $prefix/var/run/openvswitch/ovsdb-server.pid
