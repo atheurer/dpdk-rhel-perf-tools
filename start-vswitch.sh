@@ -976,11 +976,15 @@ case $switch in
 		pmd_cpu_mask=`get_cpumask $pmd_cpus`
 		echo pmd_cpu_list is [$pmd_cpus]
 		echo pmd_cpu_mask is [$pmd_cpu_mask]
+		rss_flags=""
+		if [ $queues -gt 1 ]; then
+		    rss_flags="--rss-ip --rss-udp"
+		fi
 		testpmd_cmd="${testpmd_path} -l $console_cpu,$pmd_cpus --socket-mem $all_nodes_memory\
 		  --proc-type auto --file-prefix testpmd$i $pci_location_arg\
                   --\
 		  --numa --nb-cores=$pmd_threads\
-		  --nb-ports=2 --portmask=3 --auto-start --rxq=$queues --txq=$queues\
+		  --nb-ports=2 --portmask=3 --auto-start --rxq=$queues --txq=$queues ${rss_flags}\
 		  --rxd=$descriptors --txd=$descriptors >/tmp/testpmd-$i"
 		echo testpmd_cmd: $testpmd_cmd
 		screen -dmS testpmd-$i bash -c "$testpmd_cmd"
@@ -1001,10 +1005,14 @@ case $switch in
 			pmd_cpu_mask=`get_cpumask $pmd_cpus`
 			echo pmd_cpu_list is [$pmd_cpus]
 			echo pmd_cpu_mask is [$pmd_cpu_mask]
+			rss_flags=""
+			if [ $queues -gt 1 ]; then
+			    rss_flags="--rss-ip --rss-udp"
+			fi
 			# testpmd does not like being restricted to a single NUMA node when using vhostuser, so memory from all nodes is allocated
 			testpmd_cmd="${testpmd_path} -l $console_cpu,$pmd_cpus --socket-mem $all_nodes_memory -n 4\
 			  --proc-type auto --file-prefix testpmd$i -w $pci_dev --vdev eth_vhost0,iface=$vhost_port -- --nb-cores=$pmd_threads\
-			  --nb-ports=2 --portmask=3 --auto-start --rxq=$queues --txq=$queues\
+			  --nb-ports=2 --portmask=3 --auto-start --rxq=$queues --txq=$queues ${rss_flags}\
 			  --rxd=$descriptors --txd=$descriptors >/tmp/testpmd-$i"
 			echo testpmd_cmd: $testpmd_cmd
 			screen -dmS testpmd-$i bash -c "$testpmd_cmd"
