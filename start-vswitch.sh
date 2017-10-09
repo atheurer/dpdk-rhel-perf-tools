@@ -41,8 +41,9 @@ use_ht="y"
 testpmd_ver="v17.05"
 testpmd_path="/opt/dpdk/build/${testpmd_ver}/bin/testpmd"
 supported_switches="linuxbridge ovs linuxrouter vpp testpmd"
-descriptors=2048 # use this as our default descriptor size
-desc_override="" # use to override the desriptor size of any of the vswitches here.  
+pci_descriptors=2048 # use this as our default descriptor size
+pci_desc_override="" # use to override the desriptor size of any of the vswitches here.  
+vhu_desc_override="" # use to override the desriptor size of any of the vswitches here.  
 vpp_version="17.04"
 cpu_usage_file="/var/log/isolated_cpu_usage.conf"
 
@@ -243,7 +244,7 @@ function vpp_create_vhost_user() {
 }
 
 # Process options and arguments
-opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "numa-mode:,desc-override:,devices:,nr-queues:,use-ht:,overlay:,topology:,dataplane:,switch:,switch-mode:,testpmd-path:,vpp-version:" -n "getopt.sh" -- "$@")
+opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "numa-mode:,pci-desc-override:,vhu-desc-override:,pci-devices:,devices:,nr-queues:,use-ht:,overlay:,topology:,dataplane:,switch:,switch-mode:,testpmd-path:,vpp-version:" -n "getopt.sh" -- "$@")
 if [ $? -ne 0 ]; then
 	printf -- "$*\n"
 	printf "\n"
@@ -324,11 +325,19 @@ while true; do
 			shift
 		fi
 		;;
-		--desc-override)
+		--pci-desc-override)
 		shift
 		if [ -n "$1" ]; then
-			desc_override="$1"
-			echo desc_override: [$desc_override]
+			pci_desc_override="$1"
+			echo pci-desc-override: [$pci_desc_override]
+			shift
+		fi
+		;;
+		--vhu-desc-override)
+		shift
+		if [ -n "$1" ]; then
+			vhu_desc_override="$1"
+			echo vhu-desc-override: [$vhu_desc_override]
 			shift
 		fi
 		;;
@@ -680,14 +689,14 @@ case $switch in
 	echo "    dev default {" >>$vpp_startup_file
 	echo "        num-rx-queues $queues" >>$vpp_startup_file
 	echo "        num-tx-queues $queues" >>$vpp_startup_file
-	if [ ! -z "${desc_override}" ]; then
-		echo "overriding descriptors/queue with ${desc_override}"
-		echo "        num-rx-desc ${desc_override}" >>$vpp_startup_file
-		echo "        num-tx-desc ${desc_override}" >>$vpp_startup_file
+	if [ ! -z "${pci_desc_override}" ]; then
+		echo "overriding PCI descriptors/queue with ${pci_desc_override}"
+		echo "        num-rx-desc ${pci_desc_override}" >>$vpp_startup_file
+		echo "        num-tx-desc ${pci_desc_override}" >>$vpp_startup_file
 	else
-		echo "setting descriptors/queue with ${descriptors}"
-		echo "        num-rx-desc ${descriptors}" >>$vpp_startup_file
-		echo "        num-tx-desc ${descriptors}" >>$vpp_startup_file
+		echo "setting PCI descriptors/queue with ${pci_descriptors}"
+		echo "        num-rx-desc ${pci_descriptors}" >>$vpp_startup_file
+		echo "        num-tx-desc ${pci_descriptors}" >>$vpp_startup_file
 	fi
 	echo "    }" >>$vpp_startup_file
 	echo "    no-multi-seg" >>$vpp_startup_file
@@ -933,6 +942,11 @@ case $switch in
 			$prefix/bin/ovs-vsctl add-port $phy_br ${phys_port_name} -- set Interface ${phys_port_name} type=dpdk ${phys_port_args}
 			if [ -z "$overlay" -o "$overlay" == "none" -o "$overlay" == "half-vxlan" -a $i -eq 1 ]; then
 				$prefix/bin/ovs-vsctl add-port $phy_br $vhost_port -- set Interface $vhost_port type=dpdkvhostuser
+				if [ ! -z "$vhu_desc_override" ]; then
+					echo "overriding vhostuser descriptors/queue with $vhu_desc_override"
+					ovs-vsctl set Interface $vhost_port options:n_txq_desc=$vhu_desc_override
+					ovs-vsctl set Interface $vhost_port options:n_rxq_desc=$vhu_desc_override
+				fi
 				$prefix/bin/ovs-ofctl del-flows $phy_br
 				set_ovs_bridge_mode $phy_br ${switch_mode}
 			else
@@ -970,18 +984,18 @@ case $switch in
 	echo "using $queues queue(s) per port"
 	$prefix/bin/ovs-vsctl set interface ${ovs_dpdk_interface_0_name} options:n_rxq=$queues
 	$prefix/bin/ovs-vsctl set interface ${ovs_dpdk_interface_1_name} options:n_rxq=$queues
-	if [ ! -z "$desc_override" ]; then
-		echo "overriding descriptors/queue with $desc_override"
-		ovs-vsctl set Interface ${ovs_dpdk_interface_0_name} options:n_txq_desc=$desc_override
-		ovs-vsctl set Interface ${ovs_dpdk_interface_0_name} options:n_rxq_desc=$desc_override
-		ovs-vsctl set Interface ${ovs_dpdk_interface_1_name} options:n_txq_desc=$desc_override
-		ovs-vsctl set Interface ${ovs_dpdk_interface_1_name} options:n_rxq_desc=$desc_override
+	if [ ! -z "$pci_desc_override" ]; then
+		echo "overriding PCI descriptors/queue with $pci_desc_override"
+		ovs-vsctl set Interface ${ovs_dpdk_interface_0_name} options:n_txq_desc=$pci_desc_override
+		ovs-vsctl set Interface ${ovs_dpdk_interface_0_name} options:n_rxq_desc=$pci_desc_override
+		ovs-vsctl set Interface ${ovs_dpdk_interface_1_name} options:n_txq_desc=$pci_desc_override
+		ovs-vsctl set Interface ${ovs_dpdk_interface_1_name} options:n_rxq_desc=$pci_desc_override
 	else
-		echo "setting descriptors/queue with $descriptors"
-		ovs-vsctl set Interface ${ovs_dpdk_interface_0_name} options:n_txq_desc=$descriptors
-		ovs-vsctl set Interface ${ovs_dpdk_interface_0_name} options:n_rxq_desc=$descriptors
-		ovs-vsctl set Interface ${ovs_dpdk_interface_1_name} options:n_txq_desc=$descriptors
-		ovs-vsctl set Interface ${ovs_dpdk_interface_1_name} options:n_rxq_desc=$descriptors
+		echo "setting PCI descriptors/queue with $pci_descriptors"
+		ovs-vsctl set Interface ${ovs_dpdk_interface_0_name} options:n_txq_desc=$pci_descriptors
+		ovs-vsctl set Interface ${ovs_dpdk_interface_0_name} options:n_rxq_desc=$pci_descriptors
+		ovs-vsctl set Interface ${ovs_dpdk_interface_1_name} options:n_txq_desc=$pci_descriptors
+		ovs-vsctl set Interface ${ovs_dpdk_interface_1_name} options:n_rxq_desc=$pci_descriptors
 	fi
 	
 	#configure the number of PMD threads to use
@@ -1031,7 +1045,7 @@ case $switch in
                   --\
 		  --numa --nb-cores=$pmd_threads\
 		  --nb-ports=2 --portmask=3 --auto-start --rxq=$queues --txq=$queues ${rss_flags}\
-		  --rxd=$descriptors --txd=$descriptors >/tmp/testpmd-$i"
+		  --rxd=$pci_descriptors --txd=$pci_descriptors >/tmp/testpmd-$i"
 		echo testpmd_cmd: $testpmd_cmd
 		screen -dmS testpmd-$i bash -c "$testpmd_cmd"
 		ded_cpus_list=`subtract_cpus $ded_cpus_list $pmd_cpus`
@@ -1060,7 +1074,7 @@ case $switch in
 			testpmd_cmd="${testpmd_path} -l $console_cpu,$pmd_cpus --socket-mem $all_nodes_memory -n 4\
 			  --proc-type auto --file-prefix testpmd$i -w $pci_dev --vdev eth_vhost0,iface=$vhost_port -- --nb-cores=$pmd_threads\
 			  --nb-ports=2 --portmask=3 --auto-start --rxq=$queues --txq=$queues ${rss_flags}\
-			  --rxd=$descriptors --txd=$descriptors >/tmp/testpmd-$i"
+			  --rxd=$pci_descriptors --txd=$pci_descriptors >/tmp/testpmd-$i" # note that we cannot set different desc count for each dev
 			echo testpmd_cmd: $testpmd_cmd
 			screen -dmS testpmd-$i bash -c "$testpmd_cmd"
 			count=0
