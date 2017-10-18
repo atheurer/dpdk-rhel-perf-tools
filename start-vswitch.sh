@@ -57,23 +57,33 @@ function init_cpu_usage_file() {
 	local cpu
 	local non_iso_cpu_bitmask
 	local non_iso_cpu_hexmask
+	local non_iso_cpu_list
+	local online_cpu_range
+	local online_cpu_list
+	local iso_cpu_list
+	local iso_cpus
 	/bin/rm -f $cpu_usage_file
-	for opt in `cat /proc/cmdline`; do
-		var=`echo $opt | awk -F= '{print $1}'`
-		if [ $var == "tuned.non_isolcpus" ]; then
-			val=`echo $opt | awk -F= '{print $2}'`
-			non_iso_cpu_hexmask=`echo "$val" | sed -e s/,//g | tr a-f A-F`
-			non_iso_cpu_bitmask=`echo "ibase=16; obase=2; $non_iso_cpu_hexmask" | bc`
-			non_iso_cpu_list=`convert_bitmask_to_list $non_iso_cpu_bitmask`
-			online_cpu_range=`cat /sys/devices/system/cpu/online`
-			online_cpu_list=`convert_number_range $online_cpu_range`
-			iso_cpu_list=`sub_from_list $online_cpu_list $non_iso_cpu_list`
-			for cpu in `echo $iso_cpu_list | sed -e 's/,/ /g'`; do
-				echo "$cpu:" >>$cpu_usage_file
-				let cpu=$cpu+1
-			done
-			break
-		fi
+	touch $cpu_usage_file
+	iso_cpus=$(cat /sys/devices/system/cpu/isolated)
+	if [ -n "${iso_cpus}" ]; then
+		iso_cpu_list=$(convert_number_range "${iso_cpus}")
+	else
+		for opt in `cat /proc/cmdline`; do
+			var=`echo $opt | awk -F= '{print $1}'`
+			if [ $var == "tuned.non_isolcpus" ]; then
+				val=`echo $opt | awk -F= '{print $2}'`
+				non_iso_cpu_hexmask=`echo "$val" | sed -e s/,//g | tr a-f A-F`
+				non_iso_cpu_bitmask=`echo "ibase=16; obase=2; $non_iso_cpu_hexmask" | bc`
+				non_iso_cpu_list=`convert_bitmask_to_list $non_iso_cpu_bitmask`
+				online_cpu_range=`cat /sys/devices/system/cpu/online`
+				online_cpu_list=`convert_number_range $online_cpu_range`
+				iso_cpu_list=`sub_from_list $online_cpu_list $non_iso_cpu_list`
+				break
+			fi
+		done
+	fi
+	for cpu in `echo $iso_cpu_list | sed -e 's/,/ /g'`; do
+		echo "$cpu:" >>$cpu_usage_file
 	done
 	echo "$iso_cpu_list"
 }
