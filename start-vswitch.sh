@@ -1193,7 +1193,7 @@ case $switch in
 		testpmd_descriptors=$pci_descriptors
 	fi
 	if [ "$numa_mode" == "strict" ]; then
-		testpmd_socket_mem_opt="$local_socket_mem_opt"
+		testpmd_socket_mem_opt="$local_socket_mem_opt -n"
 	else
 		testpmd_socket_mem_opt="$all_socket_mem_opt -n"
 	fi
