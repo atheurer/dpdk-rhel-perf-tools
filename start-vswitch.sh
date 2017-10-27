@@ -968,7 +968,7 @@ case $switch in
 	ovs)
 	DB_SOCK="$prefix/var/run/openvswitch/db.sock"
 	ovs_ver=`$prefix/sbin/ovs-vswitchd --version | awk '{print $4}'`
-	echo "starting ovs"
+	echo "starting ovs (ovs_ver=${ovs_ver})"
 	mkdir -p $prefix/var/run/openvswitch
 	mkdir -p $prefix/etc/openvswitch
 	$prefix/bin/ovsdb-tool create $prefix/etc/openvswitch/conf.db /usr/share/openvswitch/vswitch.ovsschema
@@ -976,7 +976,7 @@ case $switch in
     	--remote=db:Open_vSwitch,Open_vSwitch,manager_options \
     	--pidfile --detach || exit_error "failed to start ovsdb"
 
-	if echo $ovs_ver | grep -q "^2\.6\|^2\.7"; then
+	if echo $ovs_ver | grep -q "^2\.6\|^2\.7\|^2\.8"; then
 		dpdk_opts=""
 		$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-init=true
 		case $numa_mode in
@@ -1010,7 +1010,7 @@ case $switch in
 	echo waiting for ovs to init
 	$prefix/bin/ovs-vsctl --no-wait init
 
-	if echo $ovs_ver | grep -q "^2\.7"; then
+	if echo $ovs_ver | grep -q "^2\.7\|^2\.8"; then
 	    ovs_dpdk_interface_0_name="dpdk-0"
 	    pci_dev=`echo ${pci_devs} | awk -F, '{ print $1}'`
 	    ovs_dpdk_interface_0_args="options:dpdk-devargs=${pci_dev}"
@@ -1093,7 +1093,7 @@ case $switch in
 			fi
 			echo vhost_port: $vhost_port
 			vhost_ports="$vhost_ports,$vhost_port"
-			if echo $ovs_ver | grep -q "^2\.7"; then
+			if echo $ovs_ver | grep -q "^2\.7\|^2\.8"; then
 				phys_port_name="dpdk-${i}"
 				phys_port_args="options:dpdk-devargs=${pci_dev}"
 			else
