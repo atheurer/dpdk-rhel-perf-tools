@@ -39,7 +39,8 @@ dpdk_nic_kmod="vfio-pci" # dpdk-devbind: the kernel module to use when assigning
 dataplane="dpdk"
 use_ht="y"
 testpmd_ver="v17.05"
-testpmd_path="/opt/dpdk/build/${testpmd_ver}/bin/testpmd"
+#testpmd_path="/opt/dpdk/build/${testpmd_ver}/bin/testpmd"
+testpmd_path="/usr/bin/testpmd"
 supported_switches="linuxbridge ovs linuxrouter vpp testpmd"
 pci_descriptors=2048 # use this as our default descriptor size
 pci_desc_override="" # use to override the desriptor size of any of the vswitches here.  
@@ -1193,9 +1194,9 @@ case $switch in
 		testpmd_descriptors=$pci_descriptors
 	fi
 	if [ "$numa_mode" == "strict" ]; then
-		testpmd_socket_mem_opt="$local_socket_mem_opt -n"
+		testpmd_socket_mem_opt="$local_socket_mem_opt"
 	else
-		testpmd_socket_mem_opt="$all_socket_mem_opt -n"
+		testpmd_socket_mem_opt="$all_socket_mem_opt"
 	fi
 	console_cpu=`echo $local_nodes_non_iso_cpus_list | awk -F, '{print $1}'`
 	case $topology in
@@ -1220,7 +1221,7 @@ case $switch in
 		if [ $queues -gt 1 ]; then
 		    rss_flags="--rss-ip --rss-udp"
 		fi
-		testpmd_cmd="${testpmd_path} -l $console_cpu,$pmd_cpus --socket-mem $testpmd_socket_mem_opt\
+		testpmd_cmd="${testpmd_path} -l $console_cpu,$pmd_cpus --socket-mem $testpmd_socket_mem_opt -n 4\
 		  --proc-type auto --file-prefix testpmd$i $pci_location_arg\
                   --\
 		  $testpmd_numa --nb-cores=$pmd_threads\
@@ -1260,7 +1261,7 @@ case $switch in
 			if [ $queues -gt 1 ]; then
 			    rss_flags="--rss-ip --rss-udp"
 			fi
-			testpmd_cmd="${testpmd_path} -l $console_cpu,$pmd_cpus --socket-mem $testpmd_socket_mem_opt 4\
+			testpmd_cmd="${testpmd_path} -l $console_cpu,$pmd_cpus --socket-mem $testpmd_socket_mem_opt -n 4\
 			  --proc-type auto --file-prefix testpmd$i -w $pci_dev --vdev eth_vhost0,iface=$vhost_port -- --nb-cores=$pmd_threads\
 			  $testpmd_numa --nb-ports=2 --portmask=3 --auto-start --rxq=$queues --txq=$queues ${rss_flags}\
 			  --rxd=$testpmd_descriptors --txd=$testpmd_descriptors >/tmp/testpmd-$i"
