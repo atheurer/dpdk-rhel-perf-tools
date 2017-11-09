@@ -291,6 +291,7 @@ function get_pmd_cpus() {
 				new_cpu="`echo $node_iso_cpus_list | awk -F, '{print $1}'`"
 			fi
 			log_cpu_usage "$new_cpu" "$cpu_usage"
+			node_iso_cpus_list=`sub_from_list "$node_iso_cpus_list" "$new_cpu"`
 			pmd_cpus_list="$pmd_cpus_list,$new_cpu"
 			((queue_num++))
 			((count++))
