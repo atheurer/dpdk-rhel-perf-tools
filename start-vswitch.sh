@@ -109,14 +109,17 @@ function log_cpu_usage() {
 	for cpu in `echo $cpulist | sed -e 's/,/ /g'`; do
 		if grep -q -E "^$cpu:" $cpu_usage_file; then
 			if grep -q -E "^$cpu:.+" $cpu_usage_file; then
-				exit_error "cpu $cpu is already used"
+				# $cpu is already used
+				return 1
 			else
 				sed -i -e s/^$cpu:$/$cpu:$usage/ $cpu_usage_file
 			fi
 		else
-			exit_error "cpu $cpu is not in $cpu_usage_file"
+			# $cpu is not in $cpu_usage_file
+			return 1
 		fi
 	done
+	return 0
 }
 
 function exit_error() {
@@ -278,20 +281,28 @@ function get_pmd_cpus() {
 			exit
 		fi
 		queue_num=0
-		new_cpu=""
 		while [ $queue_num -lt $nr_queues ]; do
+			new_cpu=""
 			if [ "$use_ht" == "y" -a "$prev_cpu" != "" ]; then
 				# search for sibling cpu-threads before picking next avail cpu
 				cpu_siblings_range=`cat /sys/devices/system/cpu/cpu$prev_cpu/topology/thread_siblings_list`
 				cpu_siblings_list=`convert_number_range $cpu_siblings_range`
 				cpu_siblings_avail_list=`sub_from_list  $cpu_siblings_list $pmd_cpus_list`
-				new_cpu="`echo $cpu_siblings_avail_list | awk -F, '{print $1}'`"
+				if [ "$cpu_siblings_avail_list" != "" ]; then
+					# if all of the siblings are depleted, then fall back to getting a new (non-sibling) cpu
+					new_cpu="`echo $cpu_siblings_avail_list | awk -F, '{print $1}'`"
+				fi
 			fi
 			if [ "$new_cpu" == "" ]; then
+				# allocate a new cpu
 				new_cpu="`echo $node_iso_cpus_list | awk -F, '{print $1}'`"
 			fi
 			log_cpu_usage "$new_cpu" "$cpu_usage"
+			if [ $? != 0 ]; then
+				return 1 # something went wrong, abort
+			fi
 			node_iso_cpus_list=`sub_from_list "$node_iso_cpus_list" "$new_cpu"`
+			set +x
 			pmd_cpus_list="$pmd_cpus_list,$new_cpu"
 			((queue_num++))
 			((count++))
@@ -300,6 +311,7 @@ function get_pmd_cpus() {
 	done
 	pmd_cpus_list=`echo $pmd_cpus_list | sed -e 's/^,//'`
 	echo "$pmd_cpus_list"
+	return 0
 }
 
 function get_cpumask() {
