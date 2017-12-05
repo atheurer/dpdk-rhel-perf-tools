@@ -363,7 +363,7 @@ function vpp_create_vhost_user() {
 	local device_name=""
 
 	case "${vpp_version}" in
-		"17.07")
+		"17.07"|"17.10")
 		device_name=$(vppctl create vhost-user socket ${socket_name} server)
 		;;
 		"17.04"|*)
@@ -403,7 +403,7 @@ if [ $? -ne 0 ]; then
 	printf -- "\t\t                                        \tovs:         default/direct-flow-rule, l2-bridge\n"
 	printf -- "\t\t                                        \tvpp:         default/xconnect, l2-bridge\n"
 	printf -- "\t\t             --testpmd-path=str         override the default location for the testpmd binary (${testpmd_path})\n"
-	printf -- "\t\t             --vpp-version=str          control which VPP command set to use: 17.04 or 17.07 (default is ${vpp_version})\n"
+	printf -- "\t\t             --vpp-version=str          control which VPP command set to use: 17.04, 17.07, or 17.10 (default is ${vpp_version})\n"
 	exit_error ""
 fi
 echo opts: [$opts]
@@ -845,6 +845,11 @@ case $switch in
 	echo "    nodaemon" >>$vpp_startup_file
 	echo "    log /var/log/vpp.log" >>$vpp_startup_file
 	echo "    full-coredump" >>$vpp_startup_file
+	case "${vpp_version}" in
+		"17.10")
+		echo "    cli-listen /run/vpp/cli.sock" >>$vpp_startup_file
+		;;
+	esac
 	echo "}" >>$vpp_startup_file
 	echo "cpu {" >>$vpp_startup_file
 	echo "    workers $pmd_threads" >>$vpp_startup_file
@@ -883,6 +888,7 @@ case $switch in
 	echo "}" >>$vpp_startup_file
 	screen -dmS vpp /usr/bin/vpp -c /etc/vpp/startup.conf
 	echo -n "Waiting for VPP to be available"
+	vpp_wait_counter=0
 	case "${vpp_version}" in
 		"17.04")
 		# if a command is submitted to VPP 17.04 too quickly
@@ -890,23 +896,42 @@ case $switch in
 		for i in `seq 1 10`; do
 		    echo -n "."
 		    sleep 1
+		    (( vpp_wait_counter++ ))
+		done
+		;;
+		"17.10")
+		while [ ! -e /run/vpp/cli.sock -a ! -S /run/vpp/cli.sock ]; do
+			echo -n "."
+			sleep 1
+			(( vpp_wait_counter++ ))
 		done
 		;;
 	esac
+	echo
+	echo "Waited ${vpp_wait_counter} seconds for VPP to be available"
+	vpp_wait_counter=0
+	vpp_version_start=$(date)
 	while [ 1 ]; do
 		# VPP 17.04 and earlier will block here and wait until
 		# the command is accepted.  VPP 17.07 will return with
 		# an error immediately until the daemon is ready
-		vpp_version_string=$(vppctl show version)
-		if echo ${vpp_version_string} | grep -q FileNotFoundError; then
+		vpp_version_string=$(vppctl show version 2>&1)
+		if echo ${vpp_version_string} | grep -q "FileNotFoundError\|Connection refused"; then
 			echo -n "."
 			sleep 1
+			(( vpp_wait_counter++ ))
 		else
 			echo -n "done"
 			break
 		fi
 	done
 	echo
+	if [ ${vpp_wait_counter} -gt 0 ]; then
+	    echo "Waited ${vpp_wait_counter} seconds for VPP to return version information"
+	else
+	    vpp_version_stop=$(date)
+	    echo "Started waiting for VPP version at ${vpp_version_start} and finished at ${vpp_version_stop}"
+	fi
 	echo "VPP version: ${vpp_version_string}"
 	vpp_nics=`vppctl show interface | grep Ethernet | awk '{print $1}'`
 	echo "vpp nics: $vpp_nics"
@@ -930,7 +955,7 @@ case $switch in
 		set_vpp_bridge_mode ${vpp_nic[0]} ${vpp_nic[1]} ${switch_mode} 10
 
 		case "${vpp_version}" in
-			"17.07")
+			"17.07"|"17.10")
 			vppctl set interface rx-placement ${vpp_nic[0]} queue 0 worker 0
 			vppctl set interface rx-placement ${vpp_nic[1]} queue 0 worker 1
 			;;
@@ -948,7 +973,7 @@ case $switch in
 		set_vpp_bridge_mode ${vpp_nic[1]} ${vpp_nic[3]} ${switch_mode} 20
 
 		case "${vpp_version}" in
-			"17.07")
+			"17.07"|"17.10")
 			vppctl set interface rx-placement ${vpp_nic[0]} queue 0 worker 0
 			vppctl set interface rx-placement ${vpp_nic[1]} queue 0 worker 1
 			;;
@@ -970,7 +995,7 @@ case $switch in
 	vppctl show interface address
 	vppctl show threads
 	case "${vpp_version}" in
-		"17.07")
+		"17.07"|"17.10")
 		vppctl show interface rx-placement
 		;;
 		"17.04"|*)
