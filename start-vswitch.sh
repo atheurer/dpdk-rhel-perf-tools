@@ -966,8 +966,14 @@ case $switch in
 		esac
 		;;
 		"pvp"|"pv,vp")   # 10GbP1<-->VM1P1, VM1P2<-->10GbP2
-		vpp_nic[2]=$(vpp_create_vhost_user vhost-user-0-n1)
-		vpp_nic[3]=$(vpp_create_vhost_user vhost-user-1-n1)
+		vpp_nic_index=2
+		for i in `seq 0 1`; do
+			pci_dev_index=$(( i + 1 ))
+			pci_dev=`echo ${pci_devs} | awk -F, "{ print \\$${pci_dev_index}}"`
+			pci_node=`cat /sys/bus/pci/devices/"$pci_dev"/numa_node`
+			vpp_nic[${vpp_nic_index}]=$(vpp_create_vhost_user vhost-user-${i}-n${pci_node})
+			(( vpp_nic_index++ ))
+		done
 
 		set_vpp_bridge_mode ${vpp_nic[0]} ${vpp_nic[2]} ${switch_mode} 10
 		set_vpp_bridge_mode ${vpp_nic[1]} ${vpp_nic[3]} ${switch_mode} 20
