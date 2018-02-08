@@ -377,7 +377,7 @@ function vpp_create_vhost_user() {
 }
 
 # Process options and arguments
-opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "vhost-affinity:,numa-mode:,desc-override:,vhost_devices:,pci-devices:,devices:,nr-queues:,use-ht:,overlay:,topology:,dataplane:,switch:,switch-mode:,testpmd-path:,vpp-version:" -n "getopt.sh" -- "$@")
+opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "vhost-affinity:,numa-mode:,desc-override:,vhost_devices:,pci-devices:,devices:,nr-queues:,use-ht:,overlay:,topology:,dataplane:,switch:,switch-mode:,testpmd-path:,vpp-version:,dpdk-nic-kmod:" -n "getopt.sh" -- "$@")
 if [ $? -ne 0 ]; then
 	printf -- "$*\n"
 	printf "\n"
@@ -404,6 +404,7 @@ if [ $? -ne 0 ]; then
 	printf -- "\t\t                                        \tvpp:         default/xconnect, l2-bridge\n"
 	printf -- "\t\t             --testpmd-path=str         override the default location for the testpmd binary (${testpmd_path})\n"
 	printf -- "\t\t             --vpp-version=str          control which VPP command set to use: 17.04, 17.07, or 17.10 (default is ${vpp_version})\n"
+	printf -- "\t\t             --dpdk-nic-kmod=str        use this kernel modeule for the devices (default is $dpdk_nic_kmod)\n"
 	exit_error ""
 fi
 echo opts: [$opts]
@@ -535,6 +536,14 @@ while true; do
 			numa_mode="$1"
 			shift
 			echo numa_mode: [$numa_mode]
+		fi
+		;;
+		--dpdk-nic-kmod)
+		shift
+		if [ -n "$1" ]; then
+			dpdk_nic_kmod="$1"
+			shift
+			echo dpdk_nic_kmod: [$dpdk_nic_kmod]
 		fi
 		;;
 		--)
