@@ -393,7 +393,7 @@ if [ $? -ne 0 ]; then
 	printf -- "\t\t                                        Using HT has better per/core throuhgput, but not using HT has better per-queue throughput\n"
 	printf -- "\t\t             --overlay=[none|vxlan]     network overlay used, if any (not supported on all bridge types)\n"
 	printf -- "\t\t             --topology=str             pp (which is just 2 physical devices on same bridge) or pvp (which is 2 bridges, each with a phys port and a virtio port)\n"
-	printf -- "\t\t             --dataplane=str            dpdk or kernel\n"
+	printf -- "\t\t             --dataplane=str            dpdk or kernel kernel-hw-offload\n"
 	printf -- "\t\t             --desc-override            override default size for descriptor size\n"
 	printf -- "\t\t             --switch=str               testpmd, ovs, vpp, linuxrouter, or linuxbridge\n"
 	printf -- "\t\t             --switch-mode=str          Mode that the selected switch operates in.  Modes differ between switches\n"
@@ -722,13 +722,21 @@ case $dataplane in
 		dpdk-devbind --bind $dpdk_nic_kmod $pci_dev
 	done
 	;;
-	kernel)
+	kernel*)
 	# bind the devices to kernel  module
 	eth_devs=""
 	for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do
+		echo ""resetting $pci_dev:""
 		driverctl unset-override $pci_dev
 		dpdk-devbind --unbind $pci_dev
 		dpdk-devbind --bind $kernel_nic_kmod $pci_dev
+		set -x
+		devlink dev eswitch set pci/$pci_dev mode legacy
+		devlink dev eswitch show pci/$pci_dev
+		set +x
+		echo 0 >/sys/bus/pci/drivers/$kernel_nic_kmod/$pci_dev/sriov_numvfs
+		echo "pci $pci_dev num VFs:"
+		cat /sys/bus/pci/drivers/$kernel_nic_kmod/$pci_dev/sriov_numvfs
 		udevadm settle
 		if [ -e /sys/bus/pci/devices/"$pci_dev"/net/ ]; then
 			eth_dev=`/bin/ls /sys/bus/pci/devices/"$pci_dev"/net/`
@@ -1019,34 +1027,49 @@ case $switch in
 	$prefix/sbin/ovsdb-server -v --remote=punix:$DB_SOCK \
     	--remote=db:Open_vSwitch,Open_vSwitch,manager_options \
     	--pidfile --detach || exit_error "failed to start ovsdb"
-
-	if echo $ovs_ver | grep -q "^2\.6\|^2\.7\|^2\.8\|^2\.9"; then
-		dpdk_opts=""
-		$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-init=true
-		case $numa_mode in
-			strict)
-			$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-socket-mem="$local_socket_mem_opt"
-			$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-lcore-mask="`get_cpumask $local_nodes_non_iso_cpus_list`"
-			;;
-			preferred)
-			$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-socket-mem="$all_socket_mem_opt"
-			$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-lcore-mask="`get_cpumask $all_nodes_non_iso_cpus_list`"
-			;;
-		esac
-	else
-		dpdk_opts="--dpdk -n 4 --socket-mem $local_socket_mem_opt --"
-	fi
 	/bin/rm -f /var/log/openvswitch/ovs-vswitchd.log
 	echo starting ovs-vswitchd
-	case $numa_mode in
-		strict)
-		sudo su -g qemu -c "umask 002; numactl --cpunodebind=$local_numa_nodes $prefix/sbin/ovs-vswitchd $dpdk_opts unix:$DB_SOCK --pidfile --log-file=/var/log/openvswitch/ovs-vswitchd.log --detach"
+	case $dataplane in
+		"dpdk")
+	    if echo $ovs_ver | grep -q "^2\.6\|^2\.7\|^2\.8\|^2\.9"; then
+	    	dpdk_opts=""
+	    	$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-init=true
+	    	case $numa_mode in
+	    		strict)
+	    		$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-socket-mem="$local_socket_mem_opt"
+	    		$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-lcore-mask="`get_cpumask $local_nodes_non_iso_cpus_list`"
+	    		;;
+	    		preferred)
+	    		$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-socket-mem="$all_socket_mem_opt"
+	    		$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-lcore-mask="`get_cpumask $all_nodes_non_iso_cpus_list`"
+	    		;;
+	    	esac
+	    else
+		    dpdk_opts="--dpdk -n 4 --socket-mem $local_socket_mem_opt --"
+	    fi
+	    case $numa_mode in
+		    strict)
+		    sudo su -g qemu -c "umask 002; numactl --cpunodebind=$local_numa_nodes $prefix/sbin/ovs-vswitchd $dpdk_opts unix:$DB_SOCK --pidfile --log-file=/var/log/openvswitch/ovs-vswitchd.log --detach"
+		    ;;
+		    preferred)
+		    sudo su -g qemu -c "umask 002; $prefix/sbin/ovs-vswitchd $dpdk_opts unix:$DB_SOCK --pidfile --log-file=/var/log/openvswitch/ovs-vswitchd.log --detach"
+		    ;;
+	    esac
+	    rc=$?
 		;;
-		preferred)
-		sudo su -g qemu -c "umask 002; $prefix/sbin/ovs-vswitchd $dpdk_opts unix:$DB_SOCK --pidfile --log-file=/var/log/openvswitch/ovs-vswitchd.log --detach"
+	    "kernel-hw-offload")
+		echo "using kernel hw offload for ovs"
+		$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-init=false
+		$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:hw-offload=true
+		sudo su -g qemu -c "umask 002; $prefix/sbin/ovs-vswitchd unix:$DB_SOCK --pidfile --log-file=/var/log/openvswitch/ovs-vswitchd.log --detach"
+		rc=$?
 		;;
-	esac
-	rc=$?
+	    "kernel")
+		echo "this script does not support kernelmode for ovs"
+		rc=1 #not currently supported in our script
+		;;
+    esac
+
 	if [ $rc -ne 0 ]; then
 		exit_error "Aborting since openvswitch did not start correctly. Openvswitch exit code: [$rc]"
 	fi
@@ -1054,174 +1077,264 @@ case $switch in
 	echo waiting for ovs to init
 	$prefix/bin/ovs-vsctl --no-wait init
 
-	if echo $ovs_ver | grep -q "^2\.7\|^2\.8\|^2\.9"; then
-	    ovs_dpdk_interface_0_name="dpdk-0"
-	    pci_dev=`echo ${pci_devs} | awk -F, '{ print $1}'`
-	    ovs_dpdk_interface_0_args="options:dpdk-devargs=${pci_dev}"
-	    ovs_dpdk_interface_1_name="dpdk-1"
-	    pci_dev=`echo ${pci_devs} | awk -F, '{ print $2}'`
-	    ovs_dpdk_interface_1_args="options:dpdk-devargs=${pci_dev}"
-	else
-	    ovs_dpdk_interface_0_name="dpdk0"
-	    ovs_dpdk_interface_0_args=""
-	    ovs_dpdk_interface_1_name="dpdk1"
-	    ovs_dpdk_interface_1_args=""
-	fi
-	
-	echo "configuring ovs with network topology: $topology"
-	case $topology in
-		"vv,vv")  # VM1P1<-->VM2P1, VM1P2<-->VM2P2
-		# create a bridge with 2 virt devs per bridge, to be used to connect to 2 VMs
-		$prefix/bin/ovs-vsctl --if-exists del-br ovsbr0
-		$prefix/bin/ovs-vsctl add-br ovsbr0 -- set bridge ovsbr0 datapath_type=netdev
-		$prefix/bin/ovs-vsctl add-port ovsbr0 vhost-user1 -- set Interface vhost-user1 type=dpdkvhostuser
-		$prefix/bin/ovs-vsctl add-port ovsbr0 vhost-user3 -- set Interface vhost-user3 type=dpdkvhostuser
-		$prefix/bin/ovs-ofctl del-flows ovsbr0
-		set_ovs_bridge_mode ovsbr0 ${switch_mode}
-	
-		$prefix/bin/ovs-vsctl --if-exists del-br ovsbr1
-		$prefix/bin/ovs-vsctl add-br ovsbr1 -- set bridge ovsbr1 datapath_type=netdev
-		$prefix/bin/ovs-vsctl add-port ovsbr1 vhost-user2 -- set Interface vhost-user2 type=dpdkvhostuser
-		$prefix/bin/ovs-vsctl add-port ovsbr1 vhost-user4 -- set Interface vhost-user4 type=dpdkvhostuser
-		$prefix/bin/ovs-ofctl del-flows ovsbr1
-		set_ovs_bridge_mode ovsbr1 ${switch_mode}
-		ovs_ports=4
-		;;
-		"v")  # vm1 <-> vm1 
-		$prefix/bin/ovs-vsctl --if-exists del-br ovsbr0
-		$prefix/bin/ovs-vsctl add-br ovsbr0 -- set bridge ovsbr0 datapath_type=netdev
-		$prefix/bin/ovs-vsctl add-port ovsbr0 vhost-user1 -- set Interface vhost-user1 type=dpdkvhostuser
-		$prefix/bin/ovs-vsctl add-port ovsbr0 vhost-user2 -- set Interface vhost-user2 type=dpdkvhostuser
-		$prefix/bin/ovs-ofctl del-flows ovsbr0
-		set_ovs_bridge_mode ovsbr0 ${switch_mode}
-		ovs_ports=2
-		;;
-		# pvvp probably does not work
-		pvvp|pv,vv,vp)  # 10GbP1<-->VM1P1, VM1P2<-->VM2P2, VM2P1<-->10GbP2
-		$prefix/bin/ovs-vsctl --if-exists del-br ovsbr0
-		$prefix/bin/ovs-vsctl add-br ovsbr0 -- set bridge ovsbr0 datapath_type=netdev
-		$prefix/bin/ovs-vsctl add-port ovsbr0 ${ovs_dpdk_interface_0_name} -- set Interface ${ovs_dpdk_interface_0_name} type=dpdk ${ovs_dpdk_interface_0_args}
-		$prefix/bin/ovs-vsctl add-port ovsbr0 vhost-user1 -- set Interface vhost-user1 type=dpdkvhostuser
-		$prefix/bin/ovs-ofctl del-flows ovsbr0
-		set_ovs_bridge_mode ovsbr0 ${switch_mode}
-	
-		$prefix/bin/ovs-vsctl --if-exists del-br ovsbr1
-		$prefix/bin/ovs-vsctl add-br ovsbr1 -- set bridge ovsbr1 datapath_type=netdev
-		$prefix/bin/ovs-vsctl add-port ovsbr1 vhost-user2 -- set Interface vhost-user2 type=dpdkvhostuser
-		$prefix/bin/ovs-vsctl add-port ovsbr1 vhost-user3 -- set Interface vhost-user3 type=dpdkvhostuser
-		$prefix/bin/ovs-ofctl del-flows ovsbr1
-		set_ovs_bridge_mode ovsbr1 ${switch_mode}
-	
-		$prefix/bin/ovs-vsctl --if-exists del-br ovsbr2
-		$prefix/bin/ovs-vsctl add-br ovsbr2 -- set bridge ovsbr2 datapath_type=netdev
-		$prefix/bin/ovs-vsctl add-port ovsbr2 ${ovs_dpdk_interface_1_name} -- set Interface ${ovs_dpdk_interface_1_name} type=dpdk ${ovs_dpdk_interface_1_args}
-		$prefix/bin/ovs-vsctl add-port ovsbr2 vhost-user4 -- set Interface vhost-user4 type=dpdkvhostuser
-		$prefix/bin/ovs-ofctl del-flows ovsbr2
-		set_ovs_bridge_mode ovsbr2 ${switch_mode}
-		ovs_ports=6
-		;;
-		pvp|pv,vp)   # 10GbP1<-->VM1P1, VM1P2<-->10GbP2
-		# create the bridges/ports with 1 phys dev and 1 virt dev per bridge, to be used for 1 VM to forward packets
-		vhost_ports=""
-		for i in `seq 0 1`; do
-			phy_br="phy-br-$i"
-			pci_dev_index=$(( i + 1 ))
-			pci_dev=`echo ${pci_devs} | awk -F, "{ print \\$${pci_dev_index}}"`
-			pci_node=`cat /sys/bus/pci/devices/"$pci_dev"/numa_node`
-			if [ "$vhost_affinity" == "local" ]; then
-				vhost_port="vhost-user-$i-n$pci_node"
-			else # use a non-local node
-				remote_pci_nodes=`sub_from_list $node_list $pci_node`
-				remote_pci_node=`echo $remote_pci_nodes | awk -F, '{print $1}'`
-				vhost_port="vhost-user-$i-n$remote_pci_node"
-			fi
-			echo vhost_port: $vhost_port
-			vhost_ports="$vhost_ports,$vhost_port"
-			if echo $ovs_ver | grep -q "^2\.7\|^2\.8\|^2\.9"; then
-				phys_port_name="dpdk-${i}"
-				phys_port_args="options:dpdk-devargs=${pci_dev}"
-			else
-				phys_port_name="dpdk$i"
-				phys_port_args=""
-			fi
-			$prefix/bin/ovs-vsctl --if-exists del-br $phy_br
-			$prefix/bin/ovs-vsctl add-br $phy_br -- set bridge $phy_br datapath_type=netdev
-			$prefix/bin/ovs-vsctl add-port $phy_br ${phys_port_name} -- set Interface ${phys_port_name} type=dpdk ${phys_port_args}
-			if [ -z "$overlay" -o "$overlay" == "none" -o "$overlay" == "half-vxlan" -a $i -eq 1 ]; then
-				$prefix/bin/ovs-vsctl add-port $phy_br $vhost_port -- set Interface $vhost_port type=dpdkvhostuser
-				if [ ! -z "$vhu_desc_override" ]; then
-					echo "overriding vhostuser descriptors/queue with $vhu_desc_override"
-					ovs-vsctl set Interface $vhost_port options:n_txq_desc=$vhu_desc_override
-					ovs-vsctl set Interface $vhost_port options:n_rxq_desc=$vhu_desc_override
-				fi
-				$prefix/bin/ovs-ofctl del-flows $phy_br
-				set_ovs_bridge_mode $phy_br ${switch_mode}
-			else
-				if [ "$overlay" == "vxlan" -o "$overlay" == "half-vxlan" -a $i -eq 0 ]; then
-					vxlan_br="vxlan-br-$i"
-					hwaddr=`echo $hwaddrs | awk '{print $1}'`
-					hwaddrs=`echo $hwaddrs | sed -e s/^$hwaddr//`
-					vxlan_port="vxlan-$i"
-					vni=`echo "100 + $i" | bc`
-					local_ip="10.0.$vni.1"
-					remote_ip="10.0.$vni.2"
-					$prefix/bin/ovs-vsctl set Bridge $phy_br other-config:hwaddr=$hwaddr
-					$prefix/bin/ovs-vsctl --if-exists del-br $vxlan_br
-					$prefix/bin/ovs-vsctl add-br $vxlan_br -- set bridge $vxlan_br datapath_type=netdev
-					$prefix/bin/ovs-vsctl add-port $vxlan_br $vhost_port -- set Interface $vhost_port type=dpdkvhostuser
-					$prefix/bin/ovs-vsctl add-port $vxlan_br $vxlan_port -- set interface $vxlan_port type=vxlan options:remote_ip=$remote_ip options:dst_port=4789 options:key=$vni
-					ip addr add $local_ip/24 dev $phy_br
-					ip l set dev $phy_br up
-					ip l set dev $vxlan_br up
-				fi
-			fi
-		done
-		vhost_ports=`echo $vhost_ports | sed -e 's/^,//'`
-		ovs_ports=4
-		;;
-		"pp")  # 10GbP1<-->10GbP2
-		# create the bridges/ports with 1 phys dev and 1 virt dev per bridge, to be used for 1 VM to forward packets
-		$prefix/bin/ovs-vsctl --if-exists del-br ovsbr0
-		$prefix/bin/ovs-vsctl add-br ovsbr0 -- set bridge ovsbr0 datapath_type=netdev
-		$prefix/bin/ovs-vsctl add-port ovsbr0 ${ovs_dpdk_interface_0_name} -- set Interface ${ovs_dpdk_interface_0_name} type=dpdk ${ovs_dpdk_interface_0_args}
-		$prefix/bin/ovs-vsctl add-port ovsbr0 ${ovs_dpdk_interface_1_name} -- set Interface ${ovs_dpdk_interface_1_name} type=dpdk ${ovs_dpdk_interface_1_args}
-		$prefix/bin/ovs-ofctl del-flows ovsbr0
-		set_ovs_bridge_mode ovsbr0 ${switch_mode}
-		ovs_ports=2
-	esac
-	echo "using $queues queue(s) per port"
-	$prefix/bin/ovs-vsctl set interface ${ovs_dpdk_interface_0_name} options:n_rxq=$queues
-	$prefix/bin/ovs-vsctl set interface ${ovs_dpdk_interface_1_name} options:n_rxq=$queues
-	if [ ! -z "$pci_desc_override" ]; then
-		echo "overriding PCI descriptors/queue with $pci_desc_override"
-		ovs-vsctl set Interface ${ovs_dpdk_interface_0_name} options:n_txq_desc=$pci_desc_override
-		ovs-vsctl set Interface ${ovs_dpdk_interface_0_name} options:n_rxq_desc=$pci_desc_override
-		ovs-vsctl set Interface ${ovs_dpdk_interface_1_name} options:n_txq_desc=$pci_desc_override
-		ovs-vsctl set Interface ${ovs_dpdk_interface_1_name} options:n_rxq_desc=$pci_desc_override
-	else
-		echo "setting PCI descriptors/queue with $pci_descriptors"
-		ovs-vsctl set Interface ${ovs_dpdk_interface_0_name} options:n_txq_desc=$pci_descriptors
-		ovs-vsctl set Interface ${ovs_dpdk_interface_0_name} options:n_rxq_desc=$pci_descriptors
-		ovs-vsctl set Interface ${ovs_dpdk_interface_1_name} options:n_txq_desc=$pci_descriptors
-		ovs-vsctl set Interface ${ovs_dpdk_interface_1_name} options:n_rxq_desc=$pci_descriptors
-	fi
-	
-	#configure the number of PMD threads to use
-	pmd_threads=`echo "$ovs_ports * $queues" | bc`
-	echo "using a total of $pmd_threads PMD threads"
-	pmdcpus=`get_pmd_cpus "$pci_devs,$vhost_ports" $queues "ovs-pmd"`
-	if [ -z "$pmdcpus" ]; then
-		exit_error "Could not allocate PMD threads.  Do you have enough isolated cpus in the right NUAM nodes?"
-	fi
-	pmd_cpu_mask=`get_cpumask $pmdcpus`
-	echo pmd_cpus_list is [$pmdcpus]
-	echo pmd_cpu_mask is [$pmd_cpu_mask]
-	vm_cpus=`sub_from_list $ded_cpus_list $pmdcpus`
-	echo vm_cpus is [$vm_cpus]
-	ovs-vsctl set Open_vSwitch . other_config:pmd-cpu-mask=$pmd_cpu_mask
-	echo "PMD cpumask command: ovs-vsctl set Open_vSwitch . other_config:pmd-cpu-mask=$pmd_cpu_mask"
-	echo "PMD thread assinments:"
-	ovs-appctl dpif-netdev/pmd-rxq-show
+	if [ "$dataplane" == "dpdk" ]; then
+	    if echo $ovs_ver | grep -q "^2\.7\|^2\.8\|^2\.9"; then
+	        ovs_dpdk_interface_0_name="dpdk-0"
+	        pci_dev=`echo ${pci_devs} | awk -F, '{ print $1}'`
+	        ovs_dpdk_interface_0_args="options:dpdk-devargs=${pci_dev}"
+	        ovs_dpdk_interface_1_name="dpdk-1"
+	        pci_dev=`echo ${pci_devs} | awk -F, '{ print $2}'`
+	        ovs_dpdk_interface_1_args="options:dpdk-devargs=${pci_dev}"
+	    else
+	        ovs_dpdk_interface_0_name="dpdk0"
+	        ovs_dpdk_interface_0_args=""
+	        ovs_dpdk_interface_1_name="dpdk1"
+	        ovs_dpdk_interface_1_args=""
+	    fi
+	    
+	    echo "configuring ovs with network topology: $topology"
+	    case $topology in
+		    "vv,vv")  # VM1P1<-->VM2P1, VM1P2<-->VM2P2
+		    # create a bridge with 2 virt devs per bridge, to be used to connect to 2 VMs
+		    $prefix/bin/ovs-vsctl --if-exists del-br ovsbr0
+		    $prefix/bin/ovs-vsctl add-br ovsbr0 -- set bridge ovsbr0 datapath_type=netdev
+		    $prefix/bin/ovs-vsctl add-port ovsbr0 vhost-user1 -- set Interface vhost-user1 type=dpdkvhostuser
+		    $prefix/bin/ovs-vsctl add-port ovsbr0 vhost-user3 -- set Interface vhost-user3 type=dpdkvhostuser
+		    $prefix/bin/ovs-ofctl del-flows ovsbr0
+		    set_ovs_bridge_mode ovsbr0 ${switch_mode}
+	    
+		    $prefix/bin/ovs-vsctl --if-exists del-br ovsbr1
+		    $prefix/bin/ovs-vsctl add-br ovsbr1 -- set bridge ovsbr1 datapath_type=netdev
+		    $prefix/bin/ovs-vsctl add-port ovsbr1 vhost-user2 -- set Interface vhost-user2 type=dpdkvhostuser
+		    $prefix/bin/ovs-vsctl add-port ovsbr1 vhost-user4 -- set Interface vhost-user4 type=dpdkvhostuser
+		    $prefix/bin/ovs-ofctl del-flows ovsbr1
+		    set_ovs_bridge_mode ovsbr1 ${switch_mode}
+		    ovs_ports=4
+		    ;;
+		    "v")  # vm1 <-> vm1 
+		    $prefix/bin/ovs-vsctl --if-exists del-br ovsbr0
+		    $prefix/bin/ovs-vsctl add-br ovsbr0 -- set bridge ovsbr0 datapath_type=netdev
+		    $prefix/bin/ovs-vsctl add-port ovsbr0 vhost-user1 -- set Interface vhost-user1 type=dpdkvhostuser
+		    $prefix/bin/ovs-vsctl add-port ovsbr0 vhost-user2 -- set Interface vhost-user2 type=dpdkvhostuser
+		    $prefix/bin/ovs-ofctl del-flows ovsbr0
+		    set_ovs_bridge_mode ovsbr0 ${switch_mode}
+		    ovs_ports=2
+		    ;;
+		    # pvvp probably does not work
+		    pvvp|pv,vv,vp)  # 10GbP1<-->VM1P1, VM1P2<-->VM2P2, VM2P1<-->10GbP2
+		    $prefix/bin/ovs-vsctl --if-exists del-br ovsbr0
+		    $prefix/bin/ovs-vsctl add-br ovsbr0 -- set bridge ovsbr0 datapath_type=netdev
+		    $prefix/bin/ovs-vsctl add-port ovsbr0 ${ovs_dpdk_interface_0_name} -- set Interface ${ovs_dpdk_interface_0_name} type=dpdk ${ovs_dpdk_interface_0_args}
+		    $prefix/bin/ovs-vsctl add-port ovsbr0 vhost-user1 -- set Interface vhost-user1 type=dpdkvhostuser
+		    $prefix/bin/ovs-ofctl del-flows ovsbr0
+		    set_ovs_bridge_mode ovsbr0 ${switch_mode}
+	    
+		    $prefix/bin/ovs-vsctl --if-exists del-br ovsbr1
+		    $prefix/bin/ovs-vsctl add-br ovsbr1 -- set bridge ovsbr1 datapath_type=netdev
+		    $prefix/bin/ovs-vsctl add-port ovsbr1 vhost-user2 -- set Interface vhost-user2 type=dpdkvhostuser
+		    $prefix/bin/ovs-vsctl add-port ovsbr1 vhost-user3 -- set Interface vhost-user3 type=dpdkvhostuser
+		    $prefix/bin/ovs-ofctl del-flows ovsbr1
+		    set_ovs_bridge_mode ovsbr1 ${switch_mode}
+	    
+		    $prefix/bin/ovs-vsctl --if-exists del-br ovsbr2
+		    $prefix/bin/ovs-vsctl add-br ovsbr2 -- set bridge ovsbr2 datapath_type=netdev
+		    $prefix/bin/ovs-vsctl add-port ovsbr2 ${ovs_dpdk_interface_1_name} -- set Interface ${ovs_dpdk_interface_1_name} type=dpdk ${ovs_dpdk_interface_1_args}
+		    $prefix/bin/ovs-vsctl add-port ovsbr2 vhost-user4 -- set Interface vhost-user4 type=dpdkvhostuser
+		    $prefix/bin/ovs-ofctl del-flows ovsbr2
+		    set_ovs_bridge_mode ovsbr2 ${switch_mode}
+		    ovs_ports=6
+		    ;;
+		    pvp|pv,vp)   # 10GbP1<-->VM1P1, VM1P2<-->10GbP2
+		    # create the bridges/ports with 1 phys dev and 1 virt dev per bridge, to be used for 1 VM to forward packets
+		    vhost_ports=""
+		    for i in `seq 0 1`; do
+			    phy_br="phy-br-$i"
+			    pci_dev_index=$(( i + 1 ))
+			    pci_dev=`echo ${pci_devs} | awk -F, "{ print \\$${pci_dev_index}}"`
+			    pci_node=`cat /sys/bus/pci/devices/"$pci_dev"/numa_node`
+			    if [ "$vhost_affinity" == "local" ]; then
+				    vhost_port="vhost-user-$i-n$pci_node"
+			    else # use a non-local node
+				    remote_pci_nodes=`sub_from_list $node_list $pci_node`
+				    remote_pci_node=`echo $remote_pci_nodes | awk -F, '{print $1}'`
+				    vhost_port="vhost-user-$i-n$remote_pci_node"
+			    fi
+			    echo vhost_port: $vhost_port
+			    vhost_ports="$vhost_ports,$vhost_port"
+			    if echo $ovs_ver | grep -q "^2\.7\|^2\.8\|^2\.9"; then
+				    phys_port_name="dpdk-${i}"
+				    phys_port_args="options:dpdk-devargs=${pci_dev}"
+			    else
+				    phys_port_name="dpdk$i"
+				    phys_port_args=""
+			    fi
+			    $prefix/bin/ovs-vsctl --if-exists del-br $phy_br
+			    $prefix/bin/ovs-vsctl add-br $phy_br -- set bridge $phy_br datapath_type=netdev
+			    $prefix/bin/ovs-vsctl add-port $phy_br ${phys_port_name} -- set Interface ${phys_port_name} type=dpdk ${phys_port_args}
+			    if [ -z "$overlay" -o "$overlay" == "none" -o "$overlay" == "half-vxlan" -a $i -eq 1 ]; then
+				    $prefix/bin/ovs-vsctl add-port $phy_br $vhost_port -- set Interface $vhost_port type=dpdkvhostuser
+				    if [ ! -z "$vhu_desc_override" ]; then
+					    echo "overriding vhostuser descriptors/queue with $vhu_desc_override"
+					    ovs-vsctl set Interface $vhost_port options:n_txq_desc=$vhu_desc_override
+					    ovs-vsctl set Interface $vhost_port options:n_rxq_desc=$vhu_desc_override
+				    fi
+				    $prefix/bin/ovs-ofctl del-flows $phy_br
+				    set_ovs_bridge_mode $phy_br ${switch_mode}
+			    else
+				    if [ "$overlay" == "vxlan" -o "$overlay" == "half-vxlan" -a $i -eq 0 ]; then
+					    vxlan_br="vxlan-br-$i"
+					    hwaddr=`echo $hwaddrs | awk '{print $1}'`
+					    hwaddrs=`echo $hwaddrs | sed -e s/^$hwaddr//`
+					    vxlan_port="vxlan-$i"
+					    vni=`echo "100 + $i" | bc`
+					    local_ip="10.0.$vni.1"
+					    remote_ip="10.0.$vni.2"
+					    $prefix/bin/ovs-vsctl set Bridge $phy_br other-config:hwaddr=$hwaddr
+					    $prefix/bin/ovs-vsctl --if-exists del-br $vxlan_br
+					    $prefix/bin/ovs-vsctl add-br $vxlan_br -- set bridge $vxlan_br datapath_type=netdev
+					    $prefix/bin/ovs-vsctl add-port $vxlan_br $vhost_port -- set Interface $vhost_port type=dpdkvhostuser
+					    $prefix/bin/ovs-vsctl add-port $vxlan_br $vxlan_port -- set interface $vxlan_port type=vxlan options:remote_ip=$remote_ip options:dst_port=4789 options:key=$vni
+					    ip addr add $local_ip/24 dev $phy_br
+					    ip l set dev $phy_br up
+					    ip l set dev $vxlan_br up
+				    fi
+			    fi
+		    done
+		    vhost_ports=`echo $vhost_ports | sed -e 's/^,//'`
+		    ovs_ports=4
+		    ;;
+		    "pp")  # 10GbP1<-->10GbP2
+		    # create the bridges/ports with 1 phys dev and 1 virt dev per bridge, to be used for 1 VM to forward packets
+		    $prefix/bin/ovs-vsctl --if-exists del-br ovsbr0
+		    $prefix/bin/ovs-vsctl add-br ovsbr0 -- set bridge ovsbr0 datapath_type=netdev
+		    $prefix/bin/ovs-vsctl add-port ovsbr0 ${ovs_dpdk_interface_0_name} -- set Interface ${ovs_dpdk_interface_0_name} type=dpdk ${ovs_dpdk_interface_0_args}
+		    $prefix/bin/ovs-vsctl add-port ovsbr0 ${ovs_dpdk_interface_1_name} -- set Interface ${ovs_dpdk_interface_1_name} type=dpdk ${ovs_dpdk_interface_1_args}
+		    $prefix/bin/ovs-ofctl del-flows ovsbr0
+		    set_ovs_bridge_mode ovsbr0 ${switch_mode}
+		    ovs_ports=2
+	    esac
+	    echo "using $queues queue(s) per port"
+	    $prefix/bin/ovs-vsctl set interface ${ovs_dpdk_interface_0_name} options:n_rxq=$queues
+	    $prefix/bin/ovs-vsctl set interface ${ovs_dpdk_interface_1_name} options:n_rxq=$queues
+	    if [ ! -z "$pci_desc_override" ]; then
+		    echo "overriding PCI descriptors/queue with $pci_desc_override"
+		    ovs-vsctl set Interface ${ovs_dpdk_interface_0_name} options:n_txq_desc=$pci_desc_override
+		    ovs-vsctl set Interface ${ovs_dpdk_interface_0_name} options:n_rxq_desc=$pci_desc_override
+		    ovs-vsctl set Interface ${ovs_dpdk_interface_1_name} options:n_txq_desc=$pci_desc_override
+		    ovs-vsctl set Interface ${ovs_dpdk_interface_1_name} options:n_rxq_desc=$pci_desc_override
+	    else
+		    echo "setting PCI descriptors/queue with $pci_descriptors"
+		    ovs-vsctl set Interface ${ovs_dpdk_interface_0_name} options:n_txq_desc=$pci_descriptors
+		    ovs-vsctl set Interface ${ovs_dpdk_interface_0_name} options:n_rxq_desc=$pci_descriptors
+		    ovs-vsctl set Interface ${ovs_dpdk_interface_1_name} options:n_txq_desc=$pci_descriptors
+		    ovs-vsctl set Interface ${ovs_dpdk_interface_1_name} options:n_rxq_desc=$pci_descriptors
+	    fi
+	    
+	    #configure the number of PMD threads to use
+	    pmd_threads=`echo "$ovs_ports * $queues" | bc`
+	    echo "using a total of $pmd_threads PMD threads"
+	    pmdcpus=`get_pmd_cpus "$pci_devs,$vhost_ports" $queues "ovs-pmd"`
+	    if [ -z "$pmdcpus" ]; then
+		    exit_error "Could not allocate PMD threads.  Do you have enough isolated cpus in the right NUAM nodes?"
+	    fi
+	    pmd_cpu_mask=`get_cpumask $pmdcpus`
+	    echo pmd_cpus_list is [$pmdcpus]
+	    echo pmd_cpu_mask is [$pmd_cpu_mask]
+	    vm_cpus=`sub_from_list $ded_cpus_list $pmdcpus`
+	    echo vm_cpus is [$vm_cpus]
+	    ovs-vsctl set Open_vSwitch . other_config:pmd-cpu-mask=$pmd_cpu_mask
+	    echo "PMD cpumask command: ovs-vsctl set Open_vSwitch . other_config:pmd-cpu-mask=$pmd_cpu_mask"
+	    echo "PMD thread assinments:"
+	    ovs-appctl dpif-netdev/pmd-rxq-show
+    else #dataplane=kernel-hw-offload
+	    echo "configuring ovs with network topology: $topology"
+	    case $topology in
+			pvp|pv,vp)
+		    # create the bridges/ports with 1 phys dev and 1 representer dev per bridge
+
+			# delete any existing bridges
+            for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do
+                eth_dev=`/bin/ls /sys/bus/pci/devices/$pci_dev/net`
+				veth_dev="${eth_dev}_0"
+		    	ovs-vsctl --if-exists del-br phy-br-$eth_dev
+			done
+
+			# clean out the udev rules for the representer devices
+			rules=/etc/udev/rules.d/ovs_offload.rules
+			/bin/rm -rf $rules
+
+			# for a pv,vp test, the two v's are virtual functions
+			# however, the devices used by OVS are the switchdevs (represeter ports)
+			# which will be enabled later
+		    for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do 
+				echo 1 >/sys/bus/pci/devices/$pci_dev/sriov_numvfs
+			done
+
+			# unbind the VFs from their driver
+			# this is necessary before enabling switchdev
+		    for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do 
+				vf_dev=`readlink /sys/bus/pci/devices/$pci_dev/virtfn0 | sed -e 'sX../XX'`
+				echo $vf_dev >/sys/bus/pci/drivers/$kernel_nic_kmod/unbind
+			done
+
+			# create udev rules for the representer devices (switchdev devices)
+			# switchdevt device names should look like "p4p1_sd_0"
+		    for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do 
+				eth_dev=`/bin/ls /sys/bus/pci/devices/$pci_dev/net`
+				sw_id=`ip -d l show dev $eth_dev | grep 'link/ether' | sed -e 's/.*switchid //' | awk '{print $1}'`
+				echo  'SUBSYSTEM=="net", ACTION=="add", ATTR{phys_switch_id}=="'"$sw_id"'", ATTR{phys_port_name}!="", NAME="'"${eth_dev}_sd"'_$attr{phys_port_name}"' >>$rules
+			done
+			udevadm control --reload
+
+			# change to switchdev mode for the PFs
+			# this will create the representer devices for the VFs
+		    for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do 
+				devlink dev eswitch set pci/$pci_dev mode switchdev
+			done
+			udevadm settle
+
+			# bind the VFs to their driver
+			# vf device names should look like "p4p1_0"
+		    for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do 
+				vf_dev=`readlink /sys/bus/pci/devices/$pci_dev/virtfn0 | sed -e 'sX../XX'`
+				echo $vf_dev >/sys/bus/pci/drivers/$kernel_nic_kmod/bind
+			done
+			udevadm settle
+
+			# enable the hw offload feature on PFs and switchdevs
+            for pf_pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do
+                pf_eth_name=`/bin/ls /sys/bus/pci/devices/$pf_pci_dev/net`
+				sd_eth_name="${pf_eth_name}_sd_0" # the representer or "siwtchdev" ethernet device name, like "p4p4_sd_0"
+				vf_pci_dev=`readlink /sys/bus/pci/devices/$pf_pci_dev/virtfn0 | sed -e 'sX../XX'` # the PCI location of the VF
+				vf_eth_name=`/bin/ls /sys/bus/pci/devices/"$vf_pci_dev"/net`
+				ethtool -K $pf_eth_name hw-tc-offload on
+				ethtool -K $sd_eth_name hw-tc-offload on
+			done
+
+			# configure one bridge for each PF/[sd]VF pair
+			vf_eth_names=""
+            for pf_pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do
+                pf_eth_name=`/bin/ls /sys/bus/pci/devices/$pf_pci_dev/net`
+				sd_eth_name="${pf_eth_name}_sd_0" # the representer or "siwtchdev" ethernet device name, like "p4p4_sd_0"
+				vf_pci_dev=`readlink /sys/bus/pci/devices/$pf_pci_dev/virtfn0 | sed -e 'sX../XX'` # the PCI location of the VF
+				vf_eth_name=`/bin/ls /sys/bus/pci/devices/"$vf_pci_dev"/net`
+				vf_eth_names="$vf_eth_names $vf_eth_name"
+		    	ovs-vsctl add-br phy-br-$pf_eth_name
+		    	ip l s phy-br-$pf_eth_name up
+				ovs-vsctl add-port phy-br-$pf_eth_name $pf_eth_name
+				ip l s $pf_eth_name up
+				ovs-vsctl add-port phy-br-$pf_eth_name $sd_eth_name
+				ip l s $sd_eth_name up
+				set_ovs_bridge_mode phy-br-$pf_eth_name $switch_mode
+				ip l s $vf_eth_name up
+				ip link s $vf_eth_name promisc on
+				echo -e "OVS bridge phy-br-$pf_eth_name has PF $pf_eth_name and represtner $sd_eth_name, which represents VF $vf_eth_name"
+		    done
+			echo -e "\n\nNote: you must bridge these VF devices in order to complete the PVP topology: $vf_eth_names"
+
+		    ;;
+		esac
+    fi
 	;;
 
 	testpmd)
