@@ -97,7 +97,7 @@ function check_pmd_switches() {
 				if [ "${PMD_SW[$pmd]}abc" != "abc" ]; then
 					if [ $nr_sw -gt ${PMD_SW[$pmd]} ]; then
 						diff=$(( $nr_sw - ${PMD_SW[$pmd]} ))
-						echo "WARNING: number of switches increased by $diff for $pmd on CPU ${TASK_CPU[$vcpu]}"
+						echo "WARNING: number of switches increased by $diff for $pmd on CPU ${TASK_CPU[$pmd]}"
 					fi
 				fi
 				PMD_SW[$pmd]=$nr_sw
