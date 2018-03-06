@@ -67,7 +67,7 @@ function check_kvm_cpu_switches() {
 				active_cpus="$active_cpus,$cpu"
 				if [ "${VCPU_SW[$vcpu]}abc" != "abc" ]; then
 					if [ $nr_sw -gt ${VCPU_SW[$vcpu]} ]; then
-						diff=$(( $nr_sw - ${PMD_SW[$pmd]} ))
+						diff=$(( $nr_sw - ${VCPU_SW[$pmd]} ))
 						echo "WARNING: number of switches increased by $diff for $vcpu on CPU ${TASK_CPU[$vcpu]}"
 					fi
 				fi
