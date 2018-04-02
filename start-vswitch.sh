@@ -49,6 +49,17 @@ cpu_usage_file="/var/log/isolated_cpu_usage.conf"
 vhost_affinity="local" ## this is not working yet # local: the vhost interface will reside in the same node as the physical interface on the same bridge
 		       # remote: The vhost interface will reside in remote node as the physicak interface on the same bridge
 		       # this locality is an assumption and must match what was configured when VMs are created
+no_kill=0
+device_ports="0,0" # A list of two port IDs correspnding to the port ID used in the devices list.  For most devices, this is "0"
+
+function log() {
+	echo -e "start-vswitch: $1"
+}
+
+function exit_error() {
+	echo -e "$1"
+	exit 1
+}
 
 function init_cpu_usage_file() {
 	local opt
@@ -329,6 +340,7 @@ function set_ovs_bridge_mode() {
 	local bridge=$1
 	local switch_mode=$2
 
+	$prefix/bin/ovs-ofctl del-flows ${bridge}
 	case "${switch_mode}" in
 		"l2-bridge")
 			$prefix/bin/ovs-ofctl add-flow ${bridge} action=NORMAL
@@ -376,8 +388,62 @@ function vpp_create_vhost_user() {
 	echo "${device_name}"
 }
 
+# Return the netdev device name for a PCI location and matching phys_port_name
+# This is necessary when there are more than one netdev ports per PF
+# This is also used to identify a netdev device with no actual port (use "" as the match)
+function get_pf_eth_name() {
+	local pci_dev="$1"
+	local port_name_match="$2"
+	local phys_port_name=""
+	pushd /sys/bus/pci/devices/$pci_dev/net >/dev/null
+	for netdev_name in `/bin/ls`; do
+		if [ "$port_name_match" == "" ]; then
+			if cat $netdev_name/phys_port_name >/dev/null 2>&1; then
+				continue
+			else # we are looking for a device which has no name at all
+				echo "$netdev_name"
+				return 0
+			fi
+		else
+			if grep -q "$port_name_match" $netdev_name/phys_port_name; then
+				echo $netdev_name
+				return 0
+			fi
+		fi
+	done
+	echo ""
+	return 1
+}
+
+function get_switch_id() {
+	local eth_name=$1
+	local switch_id=""
+	cat /sys/class/net/$eth_name/phys_switch_id || return 1
+	return 0
+}
+
+function get_sd_eth_name() {
+	local pf_sw_id="$1"
+	local veth_name=""
+	local veth_sw_id=""
+	local veth_port_name=""
+	for veth_name in `/bin/ls /sys/devices/virtual/net`; do
+		veth_sw_id=`cat /sys/class/net/$veth_name/phys_switch_id 2>/dev/null`
+		veth_port_name=`cat /sys/class/net/$veth_name/phys_port_name 2>/dev/null`
+		if [ "$pf_sw_id" == "$veth_sw_id" ]; then
+			if echo "$veth_port_name" | grep -q "vf$vf_id"; then
+				echo "$veth_name"
+				return
+			fi
+		fi
+	done
+	if [ "$sd_eth_name" == "" ]; then
+		return 1
+	fi
+}
+
 # Process options and arguments
-opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "vhost-affinity:,numa-mode:,desc-override:,vhost_devices:,pci-devices:,devices:,nr-queues:,use-ht:,overlay:,topology:,dataplane:,switch:,switch-mode:,testpmd-path:,vpp-version:,dpdk-nic-kmod:" -n "getopt.sh" -- "$@")
+opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "no-kill,vhost-affinity:,numa-mode:,desc-override:,vhost_devices:,pci-devices:,devices:,device-ports:,nr-queues:,use-ht:,overlay:,topology:,dataplane:,switch:,switch-mode:,testpmd-path:,vpp-version:,dpdk-nic-kmod:" -n "getopt.sh" -- "$@")
 if [ $? -ne 0 ]; then
 	printf -- "$*\n"
 	printf "\n"
@@ -386,6 +452,9 @@ if [ $? -ne 0 ]; then
 	#              1   2         3         4         5         6         7         8         9         0         1         2         3
 	#              678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012
 	printf -- "\t\t             --[pci-]devices=str,str    two PCI locations of Ethenret adapters to use, like --devices=0000:83:00.0,0000:86:00.0\n"
+	printf -- "\t\t                                        you can list the same PCI device twice only if the physical function has 2 netdev devices\n"
+	printf -- "\t\t             --device-ports=int,int     If a PCI device has more than 1 netdev, then you need to specify the port ID for each device.  Port enumeration starts with \"0\"\n"
+	printf -- "\t\t             --no-kill                  Don't kill all OVS and VPP sessions (however, anything process owning a DPDK device will still be killed)\n"
 	printf -- "\t\t             --vhost-affinity=str       local [default]: use same numa node as PCI device\n"
 	printf -- "\t\t                                        remote: use opposite numa node as PCI device\n"
 	printf -- "\t\t             --nr-queues=int            the number of queues per device\n"
@@ -413,6 +482,18 @@ echo "processing options"
 while true; do
 	echo \$1: [$1]
 	case "$1" in
+		--no-kill)
+		shift
+		no_kill=1
+		;;
+		--device-ports)
+		shift
+		if [ -n "$1" ]; then
+			device_ports="$1"
+			echo device_ports: [$device_ports]
+			shift
+		fi
+		;;
 		--devices)
 		shift
 		if [ -n "$1" ]; then
@@ -608,20 +689,32 @@ done
 selinuxenabled && exit_error "disable selinux before using this script"
 
 # make sure all of the pci devices used are exactly the same
+num_vfs_per_pf=1
 pci_dev_count=0
 prev_pci_desc=""
 for this_pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do
-	pci_desc=`lspci -s $this_pci_dev | cut -d" " -f 2- | sed -s 's/ (.*$//'`
-	if [ "$prev_pci_desc" != "" -a "$prev_pci_desc" != "$pci_desc" ]; then
-		exit_error "PCI devices are not the exact same type: $prev_pci_desc, $pci_desc"
+	this_pci_desc=`lspci -s $this_pci_dev | cut -d" " -f 2- | sed -s 's/ (.*$//'`
+	if [ "$prev_pci_desc" != "" ]; then
+		if [ "$prev_pci_desc" != "$this_pci_desc" ]; then
+			exit_error "PCI devices are not the exact same type: $prev_pci_desc, $this_pci_desc"
+		fi
+		if [ "$prev_pci_dev" == "$this_pci_dev" ]; then
+			# consolidate list to one location
+			pci_devs="$this_pci_dev"
+			num_pfs=1
+			num_vfs_per_pf=2
+			echo "portlist: $device_ports"
+		fi
 	fi
-	prev_pci_desc="$pci_desc"
+	prev_pci_desc="$this_pci_desc"
+	prev_pci_dev="$this_pci_dev"
 	((pci_dev_count++))
 done
 if [ $pci_dev_count -ne 2 ]; then
 	exit_error "you must use 2 PCI devices, you used: $pci_dev_count"
 fi
 kernel_nic_kmod=`lspci -k -s $this_pci_dev | grep "Kernel modules:" | awk -F": " '{print $2}'`
+echo kernel mod: $kernel_nic_kmod
 
 
 # kill any process using the 2 PCI devices
@@ -634,22 +727,25 @@ for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do
 		kill $pids
 	fi
 done
-# completely kill and remove old ovs/vpp configuration
-echo "stopping ovs"
-killall ovs-vswitchd
-killall ovsdb-server
-killall ovsdb-server ovs-vswitchd
-echo "stopping vpp"
-killall vpp
-echo "stopping testpmd"
-killall testpmd
-sleep 3
-rm -rf $prefix/var/run/openvswitch/ovs-vswitchd.pid
-rm -rf $prefix/var/run/openvswitch/ovsdb-server.pid
-rm -rf $prefix/var/run/openvswitch/*
-rm -rf $prefix/etc/openvswitch/*db*
-rm -rf $prefix/var/log/openvswitch/*
-rm -rf $prefix/var/log/vpp/*
+
+if [ $no_kill -ne 1 ]; then
+	# completely kill and remove old ovs/vpp configuration
+	echo "stopping ovs"
+	killall ovs-vswitchd
+	killall ovsdb-server
+	killall ovsdb-server ovs-vswitchd
+	echo "stopping vpp"
+	killall vpp
+	echo "stopping testpmd"
+	killall testpmd
+	sleep 3
+	rm -rf $prefix/var/run/openvswitch/ovs-vswitchd.pid
+	rm -rf $prefix/var/run/openvswitch/ovsdb-server.pid
+	rm -rf $prefix/var/run/openvswitch/*
+	rm -rf $prefix/etc/openvswitch/*db*
+	rm -rf $prefix/var/log/openvswitch/*
+	rm -rf $prefix/var/log/vpp/*
+fi
 
 # initialize the devices
 case $dataplane in
@@ -700,7 +796,6 @@ case $dataplane in
 	echo "isol cpus_list is $iso_cpus_list"
 	echo "all-nodes-non-isolated cpus list is $all_nodes_non_iso_cpus_list"
 	
-	rmmod vfio-pci
 	# load modules and bind Ethernet cards to dpdk modules
 	for kmod in vfio vfio-pci; do
 		if lsmod | grep -q $kmod; then
@@ -734,21 +829,33 @@ case $dataplane in
 	kernel*)
 	# bind the devices to kernel  module
 	eth_devs=""
+	if [ ! -e /sys/module/$kernel_nic_kmod ]; then
+		echo "loading kenrel module $kernel_nic_kmod"
+		modprobe $kernel_nic_kmod
+	fi
 	for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do
-		echo ""resetting $pci_dev:""
-		driverctl unset-override $pci_dev
-		dpdk-devbind --unbind $pci_dev
+		if [ "$kernel_nic_kmod" == "nfp" ]; then
+			if [ "$dataplane" == "kernel-hw-offload" ]; then
+				nfp_firmware=flower
+			else
+				nfp_firmware=nic
+			fi
+			if [ ! -d /lib/firmware/netronome/$nfp_firmware  ]; then
+				echo "Cannot find Netronome firmware for HW offload"
+				exit 1
+			fi
+			pushd /lib/firmware/netronome/ >/dev/null && \
+			for i in `/bin/ls $nfp_firmware`; do
+				ln -sf $nfp_firmware/$i $i
+			done
+		fi
 		dpdk-devbind --bind $kernel_nic_kmod $pci_dev
-		set -x
-		devlink dev eswitch set pci/$pci_dev mode legacy
-		devlink dev eswitch show pci/$pci_dev
-		set +x
 		echo 0 >/sys/bus/pci/drivers/$kernel_nic_kmod/$pci_dev/sriov_numvfs
 		echo "pci $pci_dev num VFs:"
 		cat /sys/bus/pci/drivers/$kernel_nic_kmod/$pci_dev/sriov_numvfs
 		udevadm settle
 		if [ -e /sys/bus/pci/devices/"$pci_dev"/net/ ]; then
-			eth_dev=`/bin/ls /sys/bus/pci/devices/"$pci_dev"/net/`
+			eth_dev=`/bin/ls /sys/bus/pci/devices/"$pci_dev"/net/ | head -1`
 			eth_devs="$eth_devs $eth_dev"
 			mac=`ip l show dev $eth_dev | grep link/ether | awk '{print $2}'`
 			macs="$macs $mac"
@@ -759,7 +866,6 @@ case $dataplane in
 	echo ethernet devices: $eth_devs
 	;;
 esac
-echo device macs: $macs
 
 	
 # configure the vSwitch
@@ -784,13 +890,20 @@ case $switch in
 	case $topology in
 		"pp")   # 10GbP1<-->10GbP2
 		phy_br="phy-br-0"
+		if /bin/ls /sys/class/net | grep -q ^$phy_br; then
+			ip l s $phy_br down
+			brctl delbr $phy_br
+		fi
 		brctl addbr $phy_br
 		ip l set dev $phy_br up
-		for i in `seq 0 1`; do
-			eth_dev=`echo $eth_devs | awk '{print $1}'`
-			eth_devs=`echo $eth_devs | sed -e s/$eth_dev//`
-			ip l set dev $eth_dev up
-			brctl addif $phy_br $eth_dev
+		pf_count=1
+		for pf_pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do
+			pf_port_id=`echo $device_ports | cut -d, -f$pf_count`
+			pf_eth_name=`get_pf_eth_name "$pf_pci_dev" "p$pf_port_id"` || exit_error "could not find a netdev name for $pf_pci_dev"
+			log "pf_eth_name: $pf_eth_name"
+			ip l set dev $pf_eth_name up
+			brctl addif $phy_br $pf_eth_name
+			((pf_count++))
 		done
 		;;
 		pvp|pv,vp)   # 10GbP1<-->VM1P1, VM1P2<-->10GbP2
@@ -1070,6 +1183,7 @@ case $switch in
 		echo "using kernel hw offload for ovs"
 		$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-init=false
 		$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:hw-offload=true
+		$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:tc-policy=skip_sw
 		sudo su -g qemu -c "umask 002; $prefix/sbin/ovs-vswitchd unix:$DB_SOCK --pidfile --log-file=/var/log/openvswitch/ovs-vswitchd.log --detach"
 		rc=$?
 		;;
@@ -1256,94 +1370,126 @@ case $switch in
 	    echo "PMD thread assinments:"
 	    ovs-appctl dpif-netdev/pmd-rxq-show
     else #dataplane=kernel-hw-offload
-	    echo "configuring ovs with network topology: $topology"
+	    log "configuring ovs with network topology: $topology"
 	    case $topology in
 			pvp|pv,vp)
-		    # create the bridges/ports with 1 phys dev and 1 representer dev per bridge
+			# create the bridges/ports with 1 phys dev and 1 representer dev per bridge
 
-			# delete any existing bridges
-            for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do
-                eth_dev=`/bin/ls /sys/bus/pci/devices/$pci_dev/net`
+			log "Deleting any existing bridges"
+			for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do
+                		eth_dev=`/bin/ls /sys/bus/pci/devices/$pci_dev/net | head -1`
 				veth_dev="${eth_dev}_0"
-		    	ovs-vsctl --if-exists del-br phy-br-$eth_dev
+		    		ovs-vsctl --if-exists del-br phy-br-$eth_dev
 			done
 
-			# clean out the udev rules for the representer devices
+			log "Cleaning out the udev rules for the representer devices"
 			rules=/etc/udev/rules.d/ovs_offload.rules
 			/bin/rm -rf $rules
 
 			# for a pv,vp test, the two v's are virtual functions
 			# however, the devices used by OVS are the switchdevs (represeter ports)
 			# which will be enabled later
-		    for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do 
-				echo 1 >/sys/bus/pci/devices/$pci_dev/sriov_numvfs
+			log "Creating $num_vfs_per_pf VF per PF"
+			for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do 
+				echo $num_vfs_per_pf >/sys/bus/pci/devices/$pci_dev/sriov_numvfs
 			done
 
-			# unbind the VFs from their driver
+			log "Unbinding the VFs from their kernel driver"
 			# this is necessary before enabling switchdev
-		    for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do 
-				vf_dev=`readlink /sys/bus/pci/devices/$pci_dev/virtfn0 | sed -e 'sX../XX'`
-				echo $vf_dev >/sys/bus/pci/drivers/$kernel_nic_kmod/unbind
+			for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do 
+				for i in `/bin/ls /sys/bus/pci/devices/$pci_dev/ | grep virtfn`; do
+					vf_dev=`readlink /sys/bus/pci/devices/$pci_dev/$i | sed -e 'sX../XX'`
+					echo $vf_dev >/sys/bus/pci/drivers/$kernel_nic_kmod/unbind
+				done
 			done
 
-			# create udev rules for the representer devices (switchdev devices)
-			# switchdevt device names should look like "p4p1_sd_0"
-		    for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do 
-				eth_dev=`/bin/ls /sys/bus/pci/devices/$pci_dev/net`
+			log "Creating new udev rules for the representer devices (switchdev devices):"
+			# switchdev device names should look like "p4p1_sd_0"
+			for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do 
+				eth_dev=`/bin/ls /sys/bus/pci/devices/$pci_dev/net | head -1`
 				sw_id=`ip -d l show dev $eth_dev | grep 'link/ether' | sed -e 's/.*switchid //' | awk '{print $1}'`
-				echo  'SUBSYSTEM=="net", ACTION=="add", ATTR{phys_switch_id}=="'"$sw_id"'", ATTR{phys_port_name}!="", NAME="'"${eth_dev}_sd"'_$attr{phys_port_name}"' >>$rules
+				# echo  'SUBSYSTEM=="net", ACTION=="add", ATTR{phys_switch_id}=="'"$sw_id"'", ATTR{phys_port_name}!="", NAME="'"${eth_dev}_sd"'_$attr{phys_port_name}"' >>$rules
 			done
+			cat $rules
 			udevadm control --reload
 
-			# change to switchdev mode for the PFs
+			log "Changing to switchdev mode for the PFs"
 			# this will create the representer devices for the VFs
-		    for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do 
-				devlink dev eswitch set pci/$pci_dev mode switchdev
+			for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do 
+				mode=`devlink dev eswitch show pci/$pci_dev | awk '{print $3}'`
+				if [ "$mode" != "switchdev" ]; then
+					devlink dev eswitch set pci/$pci_dev mode switchdev
+				fi
 			done
 			udevadm settle
 
-			# bind the VFs to their driver
+			log "Binding the VFs to their driver"
 			# vf device names should look like "p4p1_0"
-		    for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do 
-				vf_dev=`readlink /sys/bus/pci/devices/$pci_dev/virtfn0 | sed -e 'sX../XX'`
-				echo $vf_dev >/sys/bus/pci/drivers/$kernel_nic_kmod/bind
+			for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do 
+				for i in `/bin/ls /sys/bus/pci/devices/$pci_dev/ | grep virtfn`; do
+					vf_dev=`readlink /sys/bus/pci/devices/$pci_dev/$i | sed -e 'sX../XX'`
+					echo "   *binding $vf_dev to $kernel_nic_kmod"
+					echo $vf_dev >/sys/bus/pci/drivers/$kernel_nic_kmod/bind
+				done
 			done
 			udevadm settle
-
-			# enable the hw offload feature on PFs and switchdevs
-            for pf_pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do
-                pf_eth_name=`/bin/ls /sys/bus/pci/devices/$pf_pci_dev/net`
-				sd_eth_name="${pf_eth_name}_sd_0" # the representer or "siwtchdev" ethernet device name, like "p4p4_sd_0"
-				vf_pci_dev=`readlink /sys/bus/pci/devices/$pf_pci_dev/virtfn0 | sed -e 'sX../XX'` # the PCI location of the VF
-				vf_eth_name=`/bin/ls /sys/bus/pci/devices/"$vf_pci_dev"/net`
-				ethtool -K $pf_eth_name hw-tc-offload on
-				ethtool -K $sd_eth_name hw-tc-offload on
-			done
-
-			# configure one bridge for each PF/[sd]VF pair
 			vf_eth_names=""
-            for pf_pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do
-                pf_eth_name=`/bin/ls /sys/bus/pci/devices/$pf_pci_dev/net`
-				sd_eth_name="${pf_eth_name}_sd_0" # the representer or "siwtchdev" ethernet device name, like "p4p4_sd_0"
-				vf_pci_dev=`readlink /sys/bus/pci/devices/$pf_pci_dev/virtfn0 | sed -e 'sX../XX'` # the PCI location of the VF
-				vf_eth_name=`/bin/ls /sys/bus/pci/devices/"$vf_pci_dev"/net`
-				vf_eth_names="$vf_eth_names $vf_eth_name"
-		    	ovs-vsctl add-br phy-br-$pf_eth_name
-		    	ip l s phy-br-$pf_eth_name up
-				ovs-vsctl add-port phy-br-$pf_eth_name $pf_eth_name
+			vf_pci_devs=""
+			log "Enabling the hw offload feature on PFs and switchdevs"
+			pf_count=1
+			for pf_pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do
+				for vf_id in `seq 0 $(($num_vfs_per_pf-1))`; do
+					pf_port_id=`echo $device_ports | cut -d, -f$pf_count`
+					pf_eth_name=`get_pf_eth_name "$pf_pci_dev" "p$pf_port_id"` || exit_error "could not find a netdev name for $pf_pci_dev"
+					log "pf_eth_name: $pf_eth_name"
+					pf_sw_id=`get_switch_id $pf_eth_name` || exit_error "could not find a switch ID for $pf_eth_name"
+					log "pf_switch_id: $pf_sw_id"
+					sd_eth_name=`get_sd_eth_name $pf_sw_id` || exit_error "could not find a representor device for "
+					log "sd_eth_name: $sd_eth_name"
+					vf_pci_dev=`readlink /sys/bus/pci/devices/$pf_pci_dev/virtfn$vf_id | sed -e 'sX../XX'` # the PCI location of the VF
+					log "vf_pci_dev: $vf_pci_dev"
+					vf_eth_name=`/bin/ls /sys/bus/pci/devices/"$vf_pci_dev"/net | grep "_$vf_id"`
+					log "vf_eth_name: $vf_eth_name"
+					sd_eth_name=`get_sd_eth_name $pf_sw_id $vf_id` || exit_error "could not find a representor device for $vf_eth_name ($vf_pci_dev)"
+					log "Checking if hw-tc-offload is enabled for for PF $pf_eth_name"
+					hw_tc_offload=`ethtool -k $pf_eth_name | grep hw-tc-offload | awk '{print $2}'`
+					if [ "$hw_tc_offload" == "off" ]; then
+						ethtool -K $pf_eth_name hw-tc-offload on
+					fi
+					log "Checking if hw-tc-offload is enabled for for SD $sd_eth_name"
+					hw_tc_offload=`ethtool -k $sd_eth_name | grep hw-tc-offload | awk '{print $2}'`
+					if [ "$hw_tc_offload" == "off" ]; then
+						ethtool -K $sd_eth_name hw-tc-offload on
+					fi
+					bridge_name="br-${pf_eth_name}"
+					log "Creating OVS bridge: $bridge_name"
+					ovs-vsctl add-br $bridge_name || exit
+					ip l s $bridge_name up || exit
+					ovs-vsctl add-port $bridge_name $pf_eth_name || exit
+					ip l s $pf_eth_name up || exit
+					ovs-vsctl add-port $bridge_name $sd_eth_name || exit
+					ip l s $sd_eth_name up || exit
+					set_ovs_bridge_mode $bridge_name $switch_mode || exit
+					ip l s $vf_eth_name up || exit
+					ip link s $vf_eth_name promisc on || exit
+					vf_eth_names="$vf_eth_names $vf_eth_name"
+					vf_pci_devs="$vf_pci_devs $vf_pci_dev"
+					log "OVS bridge $bridge_name has PF $pf_eth_name and represtner $sd_eth_name, which represents VF $vf_eth_name"
+				done
+				((pf_count++))
+			# Is there a netdev for the PF which has no port name?  If there is, it needs its "link" up
+			pf_eth_name=""
+			pf_eth_name=`get_pf_eth_name "$pf_pci_dev" ""`
+			if [ $? -eq 0 ]; then 
+				echo "setting link up on $pf_eth_name"
 				ip l s $pf_eth_name up
-				ovs-vsctl add-port phy-br-$pf_eth_name $sd_eth_name
-				ip l s $sd_eth_name up
-				set_ovs_bridge_mode phy-br-$pf_eth_name $switch_mode
-				ip l s $vf_eth_name up
-				ip link s $vf_eth_name promisc on
-				echo -e "OVS bridge phy-br-$pf_eth_name has PF $pf_eth_name and represtner $sd_eth_name, which represents VF $vf_eth_name"
-		    done
-			echo -e "\n\nNote: you must bridge these VF devices in order to complete the PVP topology: $vf_eth_names"
-
+			fi
+			done
+			log  "Note: you must bridge these VF devices in order to complete the PVP topology: $vf_eth_names ($vf_pci_devs)"
 		    ;;
 		esac
-    fi
+	fi
+
 	;;
 
 	testpmd)
