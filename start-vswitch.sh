@@ -411,8 +411,8 @@ function get_pf_eth_name() {
 			fi
 		fi
 	done
-	echo ""
-	return 1
+	echo "$netdev_name"
+	return 0
 }
 
 function get_switch_id() {
