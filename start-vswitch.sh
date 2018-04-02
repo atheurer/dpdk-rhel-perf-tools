@@ -928,7 +928,10 @@ case $switch in
 				brctl addif $vxlan_br $vxlan_port
 			else # no overlay
 				phy_br="phy-br-$i"
-				brctl show | grep -q $phy_br &&brctl delbr $phy_br
+				if /bin/ls /sys/class/net | grep -q ^$phy_br; then
+					ip l s $phy_br down
+					brctl delbr $phy_br
+				fi
 				brctl addbr $phy_br
 				ip l set dev $phy_br up
 				ip l set dev $eth_dev up
