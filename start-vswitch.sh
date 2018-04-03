@@ -713,7 +713,7 @@ done
 if [ $pci_dev_count -ne 2 ]; then
 	exit_error "you must use 2 PCI devices, you used: $pci_dev_count"
 fi
-kernel_nic_kmod=`lspci -k -s $this_pci_dev | grep "Kernel modules:" | awk -F": " '{print $2}'`
+kernel_nic_kmod=`lspci -k -s $this_pci_dev | grep "Kernel driver in use:" | awk -F": " '{print $2}'`
 echo kernel mod: $kernel_nic_kmod
 
 
