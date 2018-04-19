@@ -1316,8 +1316,8 @@ case $switch in
 				    $prefix/bin/ovs-vsctl add-port $phy_br $vhost_port -- set Interface $vhost_port type=dpdkvhostuser
 				    if [ ! -z "$vhu_desc_override" ]; then
 					    echo "overriding vhostuser descriptors/queue with $vhu_desc_override"
-					    ovs-vsctl set Interface $vhost_port options:n_txq_desc=$vhu_desc_override
-					    ovs-vsctl set Interface $vhost_port options:n_rxq_desc=$vhu_desc_override
+					    $prefix/bin/ovs-vsctl set Interface $vhost_port options:n_txq_desc=$vhu_desc_override
+					    $prefix/bin/ovs-vsctl set Interface $vhost_port options:n_rxq_desc=$vhu_desc_override
 				    fi
 				    $prefix/bin/ovs-ofctl del-flows $phy_br
 				    set_ovs_bridge_mode $phy_br ${switch_mode}
@@ -1359,16 +1359,16 @@ case $switch in
 	    $prefix/bin/ovs-vsctl set interface ${ovs_dpdk_interface_1_name} options:n_rxq=$queues
 	    if [ ! -z "$pci_desc_override" ]; then
 		    echo "overriding PCI descriptors/queue with $pci_desc_override"
-		    ovs-vsctl set Interface ${ovs_dpdk_interface_0_name} options:n_txq_desc=$pci_desc_override
-		    ovs-vsctl set Interface ${ovs_dpdk_interface_0_name} options:n_rxq_desc=$pci_desc_override
-		    ovs-vsctl set Interface ${ovs_dpdk_interface_1_name} options:n_txq_desc=$pci_desc_override
-		    ovs-vsctl set Interface ${ovs_dpdk_interface_1_name} options:n_rxq_desc=$pci_desc_override
+		    $prefix/bin/ovs-vsctl set Interface ${ovs_dpdk_interface_0_name} options:n_txq_desc=$pci_desc_override
+		    $prefix/bin/ovs-vsctl set Interface ${ovs_dpdk_interface_0_name} options:n_rxq_desc=$pci_desc_override
+		    $prefix/bin/ovs-vsctl set Interface ${ovs_dpdk_interface_1_name} options:n_txq_desc=$pci_desc_override
+		    $prefix/bin/ovs-vsctl set Interface ${ovs_dpdk_interface_1_name} options:n_rxq_desc=$pci_desc_override
 	    else
 		    echo "setting PCI descriptors/queue with $pci_descriptors"
-		    ovs-vsctl set Interface ${ovs_dpdk_interface_0_name} options:n_txq_desc=$pci_descriptors
-		    ovs-vsctl set Interface ${ovs_dpdk_interface_0_name} options:n_rxq_desc=$pci_descriptors
-		    ovs-vsctl set Interface ${ovs_dpdk_interface_1_name} options:n_txq_desc=$pci_descriptors
-		    ovs-vsctl set Interface ${ovs_dpdk_interface_1_name} options:n_rxq_desc=$pci_descriptors
+		    $prefix/bin/ovs-vsctl set Interface ${ovs_dpdk_interface_0_name} options:n_txq_desc=$pci_descriptors
+		    $prefix/bin/ovs-vsctl set Interface ${ovs_dpdk_interface_0_name} options:n_rxq_desc=$pci_descriptors
+		    $prefix/bin/ovs-vsctl set Interface ${ovs_dpdk_interface_1_name} options:n_txq_desc=$pci_descriptors
+		    $prefix/bin/ovs-vsctl set Interface ${ovs_dpdk_interface_1_name} options:n_rxq_desc=$pci_descriptors
 	    fi
 	    
 	    #configure the number of PMD threads to use
@@ -1383,10 +1383,10 @@ case $switch in
 	    echo pmd_cpu_mask is [$pmd_cpu_mask]
 	    vm_cpus=`sub_from_list $ded_cpus_list $pmdcpus`
 	    echo vm_cpus is [$vm_cpus]
-	    ovs-vsctl set Open_vSwitch . other_config:pmd-cpu-mask=$pmd_cpu_mask
+	    $prefix/bin/ovs-vsctl set Open_vSwitch . other_config:pmd-cpu-mask=$pmd_cpu_mask
 	    echo "PMD cpumask command: ovs-vsctl set Open_vSwitch . other_config:pmd-cpu-mask=$pmd_cpu_mask"
 	    echo "PMD thread assinments:"
-	    ovs-appctl dpif-netdev/pmd-rxq-show
+	    $prefix/bin/ovs-appctl dpif-netdev/pmd-rxq-show
     else #dataplane=kernel-hw-offload
 	    log "configuring ovs with network topology: $topology"
 	    case $topology in
@@ -1397,7 +1397,7 @@ case $switch in
 			for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do
                 		eth_dev=`/bin/ls /sys/bus/pci/devices/$pci_dev/net | head -1`
 				veth_dev="${eth_dev}_0"
-		    		ovs-vsctl --if-exists del-br phy-br-$eth_dev
+				$prefix/bin/ovs-vsctl --if-exists del-br phy-br-$eth_dev
 			done
 
 			log "Cleaning out the udev rules for the representer devices"
@@ -1481,11 +1481,11 @@ case $switch in
 					fi
 					bridge_name="br-${pf_eth_name}"
 					log "Creating OVS bridge: $bridge_name"
-					ovs-vsctl add-br $bridge_name || exit
+					$prefix/bin/ovs-vsctl add-br $bridge_name || exit
 					ip l s $bridge_name up || exit
-					ovs-vsctl add-port $bridge_name $pf_eth_name || exit
+					$prefix/bin/ovs-vsctl add-port $bridge_name $pf_eth_name || exit
 					ip l s $pf_eth_name up || exit
-					ovs-vsctl add-port $bridge_name $sd_eth_name || exit
+					$prefix/bin/ovs-vsctl add-port $bridge_name $sd_eth_name || exit
 					ip l s $sd_eth_name up || exit
 					set_ovs_bridge_mode $bridge_name $switch_mode || exit
 					ip l s $vf_eth_name up || exit
