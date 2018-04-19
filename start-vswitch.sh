@@ -717,6 +717,21 @@ kernel_nic_kmod=`lspci -k -s $this_pci_dev | grep "Kernel modules:" | awk -F": "
 echo kernel mod: $kernel_nic_kmod
 
 
+if [ $no_kill -ne 1 ]; then
+	# gracefully stop applications if possible
+	{
+		echo "stopping ovs"
+		# call exit twice for ovs-vswitchd, once with cleanup
+		# and once without for compatibility with different
+		# OVS versions
+		$prefix/bin/ovs-appctl --target ovs-vswitchd  --timeout 30 exit --cleanup
+		$prefix/bin/ovs-appctl --target ovs-vswitchd  --timeout 30 exit
+		$prefix/bin/ovs-appctl --target ovsdb-server  --timeout 30 exit
+		sleep 3
+	} &
+	wait
+fi
+
 # kill any process using the 2 PCI devices
 echo Checking for an existing process using $pci_devs
 for pci_dev in `echo $pci_devs | sed -e 's/,/ /g'`; do
