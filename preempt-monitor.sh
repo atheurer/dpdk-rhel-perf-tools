@@ -67,7 +67,7 @@ function check_kvm_cpu_switches() {
 				active_cpus="$active_cpus,$cpu"
 				if [ "${VCPU_SW[$vcpu]}abc" != "abc" ]; then
 					if [ $nr_sw -gt ${VCPU_SW[$vcpu]} ]; then
-						diff=$(( $nr_sw - ${VCPU_SW[$pmd]} ))
+                                               diff=$(echo "$nr_sw - ${VCPU_SW[$pmd]}" | bc)
 						echo "WARNING: number of switches increased by $diff for $vcpu on CPU ${TASK_CPU[$vcpu]}"
 					fi
 				fi
@@ -127,7 +127,8 @@ for i in `echo $iso_cpus_range | sed -e 's/,/ /g'`; do
 		iso_cpus_list="$iso_cpus_list,$i"
 	fi
 done
-echo "isoalted cpus: $iso_cpus_list" | sed -e 's/,//'
+iso_cpus_list="$iso_cpus_list," # leave a trailing , here for easier grepping later
+echo "isoalted cpus: $iso_cpus_list"
 old_timestamp=`date +%s`
 sleep $interval
 while true; do
