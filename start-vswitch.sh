@@ -457,7 +457,7 @@ function get_sd_netdev_name() {
 }
 
 # Process options and arguments
-opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "no-kill,vhost-affinity:,numa-mode:,desc-override:,vhost_devices:,pci-devices:,devices:,nr-queues:,use-ht:,overlay:,topology:,dataplane:,switch:,switch-mode:,testpmd-path:,vpp-version:,dpdk-nic-kmod:" -n "getopt.sh" -- "$@")
+opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "no-kill,vhost-affinity:,numa-mode:,desc-override:,vhost_devices:,pci-devices:,devices:,nr-queues:,use-ht:,overlay:,topology:,dataplane:,switch:,switch-mode:,testpmd-path:,vpp-version:,dpdk-nic-kmod:,prefix:" -n "getopt.sh" -- "$@")
 if [ $? -ne 0 ]; then
 	printf -- "$*\n"
 	printf "\n"
@@ -631,6 +631,14 @@ while true; do
 			dpdk_nic_kmod="$1"
 			shift
 			echo dpdk_nic_kmod: [$dpdk_nic_kmod]
+		fi
+		;;
+		--prefix)
+		shift
+		if [ -n "$1" ]; then
+			prefix="$1"
+			shift
+			echo prefix: [$prefix]
 		fi
 		;;
 		--)
@@ -1160,7 +1168,7 @@ case $switch in
 	echo starting ovs-vswitchd
 	case $dataplane in
 		"dpdk")
-	    if echo $ovs_ver | grep -q "^2\.6\|^2\.7\|^2\.8\|^2\.9"; then
+	    if echo $ovs_ver | grep -q "^2\.6\|^2\.7\|^2\.8\|^2\.9\|^2\.10"; then
 	    	dpdk_opts=""
 	    	$prefix/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-init=true
 	    	case $numa_mode in
@@ -1208,13 +1216,20 @@ case $switch in
 	$prefix/bin/ovs-vsctl --no-wait init
 
 	if [ "$dataplane" == "dpdk" ]; then
-	    if echo $ovs_ver | grep -q "^2\.7\|^2\.8\|^2\.9"; then
+	    if echo $ovs_ver | grep -q "^2\.7\|^2\.8\|^2\.9\|^2\.10"; then
+		pci_devs=`get_devs_locs $devs`
+
 	        ovs_dpdk_interface_0_name="dpdk-0"
-	        pci_dev=`echo ${devs} | awk -F, '{ print $1}'`
+	        #pci_dev=`echo ${devs} | awk -F, '{ print $1}'`
+	        pci_dev=`echo $pci_devs | awk '{print $1}'`
 	        ovs_dpdk_interface_0_args="options:dpdk-devargs=${pci_dev}"
+		echo "ovs_dpdk_interface_0_args[$ovs_dpdk_interface_0_args]"
+
 	        ovs_dpdk_interface_1_name="dpdk-1"
-	        pci_dev=`echo ${devs} | awk -F, '{ print $2}'`
+	        #pci_dev=`echo ${devs} | awk -F, '{ print $2}'`
+	        pci_dev=`echo $pci_devs | awk '{print $2}'`
 	        ovs_dpdk_interface_1_args="options:dpdk-devargs=${pci_dev}"
+		echo "ovs_dpdk_interface_1_args[$ovs_dpdk_interface_1_args]"
 	    else
 	        ovs_dpdk_interface_0_name="dpdk0"
 	        ovs_dpdk_interface_0_args=""
@@ -1291,7 +1306,7 @@ case $switch in
 			    fi
 			    echo vhost_port: $vhost_port
 			    vhost_ports="$vhost_ports,$vhost_port"
-			    if echo $ovs_ver | grep -q "^2\.7\|^2\.8\|^2\.9"; then
+			    if echo $ovs_ver | grep -q "^2\.7\|^2\.8\|^2\.9\|^2\.10"; then
 				    phys_port_name="dpdk-${i}"
 				    phys_port_args="options:dpdk-devargs=${pci_dev}"
 			    else
@@ -1535,8 +1550,10 @@ case $switch in
 			# also build the port bitmask
 			for this_dev in `echo $devs | sed -e 's/,/ /g'`; do
 				if [ "$(get_dev_loc $this_dev)" == "$pf_loc" ]; then
+					set -x
 					this_portnum=`echo "$(get_dev_port $this_dev) + $portnum_base" | bc`
 					portmask=`echo "$portmask + 2^$this_portnum" | bc`
+					set +x
 				fi
 			done
 			portnum_base=`echo "$portnum_base + ${pf_num_netdevs[$pf_loc]}" | bc`
