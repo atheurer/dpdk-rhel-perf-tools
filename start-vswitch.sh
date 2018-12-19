@@ -406,7 +406,7 @@ function get_devs_locs() {
 
 function get_dev_port() {
 	# input should be pci_location/port-number, like 0000:86:0.0/1
-	echo $this_dev | awk -F/ '{print $2}'
+	echo $1 | awk -F/ '{print $2}'
 }
 
 function get_dev_desc() {
@@ -435,20 +435,30 @@ function get_switch_id() {
 	cat /sys/class/net/$1/phys_switch_id || return 1
 }
 
+# Return the netdev of the switchdev (representor) device
+# You must provide the full device name, aka pci_location/port-id
 function get_sd_netdev_name() {
-	local pf_sw_id="$1"
+	local dev="$1"
+	local dev_loc=`get_dev_loc $dev`
+	local dev_port=`get_dev_port $dev`
+	local dev_netdev=`get_dev_netdev $dev`
+	local dev_sw_id=`get_switch_id $dev_netdev`
 	local veth_name=""
 	local veth_sw_id=""
 	local veth_port_name=""
+	local count=0
+	# search all virtual devices, looking for a switch_id that matches the 
+	# physical port and pick the Nth match, where N = the port ID od the device
 	for veth_name in `/bin/ls /sys/devices/virtual/net`; do
 		veth_sw_id=`cat /sys/class/net/$veth_name/phys_switch_id 2>/dev/null`
-		veth_port_name=`cat /sys/class/net/$veth_name/phys_port_name 2>/dev/null`
-		if [ "$pf_sw_id" == "$veth_sw_id" ]; then
-			#if echo "$veth_port_name" | grep -q "vf$vf_id"; then
-			if echo "$veth_port_name" | grep -q "$vf_id"; then
+		if [ "$dev_sw_id" == "$veth_sw_id" ]; then
+			veth_phys_port_name=`cat /sys/class/net/$veth_name/phys_port_name`
+			#if [ $dev_port -eq $count ]; then
+			if [ "$veth_phys_port_name" == "pf0vf$dev_port" ]; then
 				echo "$veth_name"
 				return
 			fi
+			#((count++))
 		fi
 	done
 	if [ "$sd_eth_name" == "" ]; then
@@ -765,6 +775,8 @@ if [ "$kernel_nic_kmod" == "nfp" ]; then
 	for i in `/bin/ls $nfp_firmware`; do
 		ln -sf $nfp_firmware/$i $i
 	done
+	rmmod nfp
+	modprobe nfp
 fi
 
 # initialize the devices
@@ -819,14 +831,14 @@ case $dataplane in
 	# load modules and bind Ethernet cards to dpdk modules
 	for kmod in vfio vfio-pci; do
 		if lsmod | grep -q $kmod; then
-		echo "not loading $kmod (already loaded)"
-	else
-		if modprobe -v $kmod; then
-			echo "loaded $kmod module"
+			echo "not loading $kmod (already loaded)"
 		else
-			exit_error "Failed to load $kmmod module, exiting"
+			if modprobe -v $kmod; then
+				echo "loaded $kmod module"
+			else
+				exit_error "Failed to load $kmmod module, exiting"
+			fi
 		fi
-	fi
 	done
 
 	echo DPDK devs: $devs
@@ -864,6 +876,7 @@ case $dataplane in
 		modprobe $kernel_nic_kmod
 	fi
 	for this_pf_loc in $(get_devs_locs $devs); do
+		dpdk-devbind --unbind $kernel_nic_kmod $this_pf_loc
 		dpdk-devbind --bind $kernel_nic_kmod $this_pf_loc
 		echo 0 >/sys/bus/pci/drivers/$kernel_nic_kmod/$this_pf_loc/sriov_numvfs
 		echo "pci $this_pf_loc num VFs:"
@@ -880,7 +893,6 @@ case $dataplane in
 	;;
 esac
 
-	
 # configure the vSwitch
 echo configuring the vswitch: $switch
 case $switch in
@@ -1291,11 +1303,14 @@ case $switch in
 		    ;;
 		    pvp|pv,vp)   # 10GbP1<-->VM1P1, VM1P2<-->10GbP2
 		    # create the bridges/ports with 1 phys dev and 1 virt dev per bridge, to be used for 1 VM to forward packets
+                    echo "BILL1 ***********************"
 		    vhost_ports=""
 		    for i in `seq 0 1`; do
 			    phy_br="phy-br-$i"
 			    pci_dev_index=$(( i + 1 ))
 			    pci_dev=`echo ${devs} | awk -F, "{ print \\$${pci_dev_index}}"`
+                            pci_dev=`echo "$pci_dev" | sed 's/..$//'`
+                            echo "BILL pci_dev = $pci_dev"
 			    pci_node=`cat /sys/bus/pci/devices/"$pci_dev"/numa_node`
 			    if [ "$vhost_affinity" == "local" ]; then
 				    vhost_port="vhost-user-$i-n$pci_node"
@@ -1410,12 +1425,15 @@ case $switch in
 				/bin/rm -rf $rules
 			fi
 
-			# for a pv,vp test, the two v's are virtual functions
-			# however, the devices used by OVS are the switchdevs (represeter ports)
-			# which will be enabled later
-			log "Creating $num_vfs_per_pf VF per PF"
 			for this_pf_loc in `get_devs_locs $devs`; do
-				echo $num_vfs_per_pf >/sys/bus/pci/devices/$this_pf_loc/sriov_numvfs
+				num_vfs=0
+				for this_dev in `echo $devs | sed -e 's/,/ /g'`; do
+					this_dev_loc=`get_dev_loc $this_dev`
+					if [ "$this_pf_loc" == "$this_dev_loc" ]; then
+						((num_vfs++))
+					fi
+				done
+				echo $num_vfs >/sys/bus/pci/devices/$this_pf_loc/sriov_numvfs || exit_error "Could not set number of VFs: /sys/bus/pci/devices/$this_pf_loc/sriov_numvfs"
 			done
 
 			log "Unbinding all the VFs from their kernel driver"
@@ -1460,11 +1478,10 @@ case $switch in
 			udevadm settle
 			vf_eth_names=""
 			vf_devs=""
-			log "Enabling the hw offload feature on PFs and switchdevs"
+			log "\nEnabling the hw offload feature on PFs and switchdevs\n"
 			pf_count=1
 			#for pf_loc in `get_devs_locs $devs`; do
 			for this_dev in `echo $devs | sed -e 's/,/ /g'`; do
-	
 				pf_loc=`get_dev_loc $this_dev`
 				log "  working on this device: $this_dev"
 				dev_netdev_name=`get_dev_netdev $this_dev`
@@ -1476,34 +1493,32 @@ case $switch in
 				fi
 				dev_sw_id=`get_switch_id $dev_netdev_name` || exit_error "  could not find a switch ID for $dev_netdev_name"
 				log "  switch ID for this device: $dev_sw_id"
-				sd_netdev_name=`get_sd_netdev_name $dev_sw_id` || exit_error "  could not find a representor device for $dev_sw_id"
-				log "  netdev name for the switchdev (representor) device: $sd_netdev_name"
-				for vf_id in `seq 0 $(($num_vfs_per_pf-1))`; do
-					vf_loc=`readlink /sys/bus/pci/devices/$pf_loc/virtfn$vf_id | sed -e 'sX../XX'` # the PCI location of the VF
-					log "  virtual function's PCI locaton that's used from this device: $vf_loc"
-					vf_eth_name=`/bin/ls /sys/bus/pci/devices/"$vf_loc"/net | grep "_$vf_id"`
-					log "  netdev name for this virtual function: $vf_eth_name"
-					sd_eth_name=`get_sd_netdev_name $dev_sw_id $vf_id` || exit_error "  could not find a representor device for $vf_eth_name ($vf_loc)"
-					log "  Checking if hw-tc-offload is enabled for for switchdev (representor) netdev:  $sd_eth_name"
-					hw_tc_offload=`ethtool -k $sd_eth_name | grep hw-tc-offload | awk '{print $2}'`
-					if [ "$hw_tc_offload" == "off" ]; then
-						ethtool -K $sd_eth_name hw-tc-offload on
-					fi
-					bridge_name="br-${dev_netdev_name}"
-					log "  creating OVS bridge: $bridge_name"
-					$prefix/bin/ovs-vsctl add-br $bridge_name || exit
-					ip l s $bridge_name up || exit
-					$prefix/bin/ovs-vsctl add-port $bridge_name $dev_netdev_name || exit
-					ip l s $dev_netdev_name up || exit
-					$prefix/bin/ovs-vsctl add-port $bridge_name $sd_eth_name || exit
-					ip l s $sd_eth_name up || exit
-					set_ovs_bridge_mode $bridge_name $switch_mode || exit
-					ip l s $vf_eth_name up || exit
-					ip link s $vf_eth_name promisc on || exit
-					vf_eth_names="$vf_eth_names $vf_eth_name"
-					vf_devs="$vf_devs $vf_loc"
-					log "  ovs bridge $bridge_name has PF $dev_netdev_name and represtner $sd_eth_name, which represents VF $vf_eth_name"
-				done
+				port_id=`get_dev_port $this_dev`
+				vf_loc=`readlink /sys/bus/pci/devices/$pf_loc/virtfn$port_id | sed -e 'sX../XX'` # the PCI location of the VF
+				log "  virtual function's PCI locaton that's used from this device: $vf_loc"
+				vf_eth_name=`/bin/ls /sys/bus/pci/devices/"$vf_loc"/net | grep "_$port_id"`
+				log "  netdev name for this virtual function: $vf_eth_name"
+				sd_eth_name=`get_sd_netdev_name $this_dev` || exit_error "  could not find a representor device for $this_dev ($dev_eth_name)"
+				log "  netdev name for the switchdev (representor) device: $sd_eth_name"
+				log "  Checking if hw-tc-offload is enabled for for switchdev (representor) netdev:  $sd_eth_name"
+				hw_tc_offload=`ethtool -k $sd_eth_name | grep hw-tc-offload | awk '{print $2}'`
+				if [ "$hw_tc_offload" == "off" ]; then
+					ethtool -K $sd_eth_name hw-tc-offload on
+				fi
+				bridge_name="br-${dev_netdev_name}"
+				log "  creating OVS bridge: $bridge_name"
+				$prefix/bin/ovs-vsctl add-br $bridge_name || exit
+				ip l s $bridge_name up || exit
+				$prefix/bin/ovs-vsctl add-port $bridge_name $dev_netdev_name || exit
+				ip l s $dev_netdev_name up || exit
+				$prefix/bin/ovs-vsctl add-port $bridge_name $sd_eth_name || exit
+				ip l s $sd_eth_name up || exit
+				set_ovs_bridge_mode $bridge_name $switch_mode || exit
+				ip l s $vf_eth_name up || exit
+				ip link s $vf_eth_name promisc on || exit
+				vf_eth_names="$vf_eth_names $vf_eth_name"
+				vf_devs="$vf_devs $vf_loc"
+				log "  ovs bridge $bridge_name has PF $dev_netdev_name and represtner $sd_eth_name, which represents VF $vf_eth_name"
 				((pf_count++))
 			# Is there a netdev for the PF which has no port name?  If there is, it needs its "link" up
 			pf_eth_name=""
