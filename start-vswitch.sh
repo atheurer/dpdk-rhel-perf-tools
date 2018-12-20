@@ -458,6 +458,10 @@ function get_sd_netdev_name() {
 				echo "$veth_name"
 				return
 			fi
+			if [ "$veth_phys_port_name" == "$dev_port" ]; then
+				echo "$veth_name"
+				return
+			fi
 			#((count++))
 		fi
 	done
@@ -869,16 +873,18 @@ case $dataplane in
 	done
 	;;
 	kernel*)
-	# bind the devices to kernel  module
+	# bind the devices to kernel module
 	eth_devs=""
 	if [ ! -e /sys/module/$kernel_nic_kmod ]; then
 		echo "loading kenrel module $kernel_nic_kmod"
-		modprobe $kernel_nic_kmod
+		modprobe $kernel_nic_kmod || exit_error "Kernel module load failed"
 	fi
 	for this_pf_loc in $(get_devs_locs $devs); do
-		dpdk-devbind --unbind $kernel_nic_kmod $this_pf_loc
+		dpdk-devbind --unbind $this_pf_loc
 		dpdk-devbind --bind $kernel_nic_kmod $this_pf_loc
-		echo 0 >/sys/bus/pci/drivers/$kernel_nic_kmod/$this_pf_loc/sriov_numvfs
+		if [ ! -e /sys/bus/pci/drivers/$kernel_nic_kmod/$this_pf_loc/sriov_numvfs ]; then
+			exit_error "Could not find /sys/bus/pci/drivers/$kernel_nic_kmod/$this_pf_loc/sriov_numvfs, exiting"
+		fi
 		echo "pci $this_pf_loc num VFs:"
 		cat /sys/bus/pci/drivers/$kernel_nic_kmod/$this_pf_loc/sriov_numvfs
 		udevadm settle
@@ -1431,9 +1437,11 @@ case $switch in
 					this_dev_loc=`get_dev_loc $this_dev`
 					if [ "$this_pf_loc" == "$this_dev_loc" ]; then
 						((num_vfs++))
+						#((num_vfs++))
 					fi
 				done
-				echo $num_vfs >/sys/bus/pci/devices/$this_pf_loc/sriov_numvfs || exit_error "Could not set number of VFs: /sys/bus/pci/devices/$this_pf_loc/sriov_numvfs"
+				echo "0" >/sys/bus/pci/devices/$this_pf_loc/sriov_numvfs || exit_error "Could not set number of VFs to 0: /sys/bus/pci/devices/$this_pf_loc/sriov_numvfs"
+				echo "$num_vfs" >/sys/bus/pci/devices/$this_pf_loc/sriov_numvfs || exit_error "Could not set number of VFs to $num_vfs: /sys/bus/pci/devices/$this_pf_loc/sriov_numvfs"
 			done
 
 			log "Unbinding all the VFs from their kernel driver"
