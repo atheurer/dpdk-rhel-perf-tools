@@ -314,7 +314,6 @@ function get_pmd_cpus() {
 				return 1 # something went wrong, abort
 			fi
 			node_iso_cpus_list=`sub_from_list "$node_iso_cpus_list" "$new_cpu"`
-			set +x
 			pmd_cpus_list="$pmd_cpus_list,$new_cpu"
 			((queue_num++))
 			((count++))
@@ -471,7 +470,7 @@ function get_sd_netdev_name() {
 }
 
 # Process options and arguments
-opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "no-kill,vhost-affinity:,numa-mode:,desc-override:,vhost_devices:,pci-devices:,devices:,nr-queues:,use-ht:,overlay:,topology:,dataplane:,switch:,switch-mode:,testpmd-path:,vpp-version:,dpdk-nic-kmod:,prefix:" -n "getopt.sh" -- "$@")
+opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "no-kill,vhost-affinity:,numa-mode:,desc-override:,vhost_devices:,pci-devices:,devices:,nr-queues:,use-ht:,overlay:,topology:,dataplane:,switch:,switch-mode:,testpmd-path:,vpp-version:,dpdk-nic-kmod:,prefix:,pci-desc-override:" -n "getopt.sh" -- "$@")
 if [ $? -ne 0 ]; then
 	printf -- "$*\n"
 	printf "\n"
@@ -745,7 +744,7 @@ if [ $dev_count -ne 2 ]; then
 	exit_error "you must use 2 PCI devices, you used: $dev_count"
 fi
 
-kernel_nic_kmod=`lspci -k -s $(get_dev_loc $this_dev) | grep "Kernel modules:" | awk -F": " '{print $2}'`
+kernel_nic_kmod=`lspci -k -s $(get_dev_loc $this_dev) | grep "Kernel modules:" | awk -F": " '{print $2}' | sed -e s/virtio_pci/virtio-pci/`
 echo kernel mod: $kernel_nic_kmod
 
 # kill any process using the 2 devices
@@ -876,11 +875,13 @@ case $dataplane in
 			# this info might be needed later and it not readily available
 			# once the kernel nic driver is not bound
 			pf_num_netdevs["$this_pf_loc"]=$num_netdevs
-			set +x
+		else
+			# some devices don't have /sys/bus/pci/devices/$this_pf_loc/net/a so assume they have 1 netdev
+			pf_num_netdevs["$this_pf_loc"]=1
 		fi
 		echo "unbinding $kernel_nic_kmod from $this_pf_loc"
 		dpdk-devbind --unbind $this_pf_loc
-		echo "unbinding $dpdk_nic_kmod to $this_pf_loc"
+		echo "binding $dpdk_nic_kmod to $this_pf_loc"
 		dpdk-devbind --bind $dpdk_nic_kmod $this_pf_loc
 	done
 	;;
