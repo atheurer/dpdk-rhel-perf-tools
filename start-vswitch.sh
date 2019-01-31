@@ -458,6 +458,10 @@ function get_sd_netdev_name() {
 				echo "$veth_name"
 				return
 			fi
+			if [ "$veth_phys_port_name" == "pf1vf$dev_port" ]; then
+				echo "$veth_name"
+				return
+			fi
 			if [ "$veth_phys_port_name" == "$dev_port" ]; then
 				echo "$veth_name"
 				return
@@ -1526,7 +1530,7 @@ case $switch in
 					ethtool -K $sd_eth_name hw-tc-offload on
 				fi
 				bridge_name="br-${dev_netdev_name}"
-				log "  creating OVS bridge: $bridge_name"
+				log "  creating OVS bridge: $bridge_name with devices $dev_netdev_name and $sd_eth_name"
                                $ovs_bin/ovs-vsctl add-br $bridge_name || exit
 				ip l s $bridge_name up || exit
                                $ovs_bin/ovs-vsctl add-port $bridge_name $dev_netdev_name || exit
@@ -1538,7 +1542,7 @@ case $switch in
 				ip link s $vf_eth_name promisc on || exit
 				vf_eth_names="$vf_eth_names $vf_eth_name"
 				vf_devs="$vf_devs $vf_loc"
-				log "  ovs bridge $bridge_name has PF $dev_netdev_name and represtner $sd_eth_name, which represents VF $vf_eth_name"
+				log "  ovs bridge $bridge_name has PF $dev_netdev_name and representor $sd_eth_name, which represents VF $vf_eth_name"
 				((pf_count++))
 			# Is there a netdev for the PF which has no port name?  If there is, it needs its "link" up
 			pf_eth_name=""
