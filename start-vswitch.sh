@@ -24,15 +24,15 @@ queues=1 # queues: Number of queue-pairs (rx/tx) to use per device
 switch="ovs" # switch: Currently supported is: testpmd, ovs, linuxbridge, linuxrouter, vpp
 switch_mode="default" # switch_mode: Currently supported list depends on $switch
 numa_mode="strict" # numa_mode: (for DPDK vswitches only)
-			# strict:    All PMD threads for all phys and virt devices use memory and cpu only
-			#            from the numa node where the physical adapters are located.
-			#	     This implies the VMs must be on the same node.
-			# preferred: Just like 'strict', but the vswitch also has memory and in some cases
-			#            uses cpu from the non-local NUMA nodes.
-			# cross:     The PMD threads for all phys devices use memory and cpu from
-			#            the local NUMA node, but VMs are present on another NUMA node,
-			#            and so the PMD threads for those virt devices are also on
-			#            another NUMA node.
+			#strict:    All PMD threads for all phys and virt devices use memory and cpu only 
+			#           from the numa node where the physical adapters are located.           
+			#           This implies the VMs must be on the same node.                        
+			#preferred: Just like 'strict', but the vswitch also has memory and in some cases 
+			#           uses cpu from the non-local NUMA nodes.                               
+			#cross:     The PMD threads for all phys devices use memory and cpu from          
+			#           the local NUMA node, but VMs are present on another NUMA node,        
+			#           and so the PMD threads for those virt devices are also on             
+			#           another NUMA node.                                                    
 overlay="none" # overlay: Currently supported is: none (for all switch types) and vxlan (for linuxbridge and ovs)
 ovs_build="rpm" # either "rpm" or "src"
 dpdk_nic_kmod="vfio-pci" # dpdk-devbind: the kernel module to use when assigning a network device to a userspace program (DPDK application)
@@ -510,6 +510,15 @@ if [ $? -ne 0 ]; then
 	printf -- "\t\t--testpmd-path=str .................... Override the default location for the testpmd binary (${testpmd_path})\n\n"
 	printf -- "\t\t--vpp-version=str ..................... Control which VPP command set to use: 17.04, 17.07, or 17.10 (default is ${vpp_version})\n\n"
 	printf -- "\t\t--dpdk-nic-kmod=str ................... Use this kernel modeule for the devices (default is $dpdk_nic_kmod)\n\n"
+	printf -- "\t\t--numa-mode=str ....................... strict:    (default).  All PMD threads for all phys and virt devices use memory and cpu only\n"
+        printf -- "\t\t                                                   from the numa node where the physical adapters are located.\n"
+        printf -- "\t\t                                                   This implies the VMs must be on the same node.\n"
+	printf -- "\t\t                                        preferred: Just like 'strict', but the vswitch also has memory and in some cases\n"
+	printf -- "\t\t                                                   uses cpu from the non-local NUMA nodes.\n"
+	printf -- "\t\t                                        cross:     The PMD threads for all phys devices use memory and cpu from\n"
+	printf -- "\t\t                                                   the local NUMA node, but VMs are present on another NUMA node,\n"
+	printf -- "\t\t                                                   and so the PMD threads for those virt devices are also on\n"
+	printf -- "\t\t                                                   another NUMA node.\n"
 	exit_error ""
 fi
 echo opts: [$opts]
