@@ -24,15 +24,15 @@ queues=1 # queues: Number of queue-pairs (rx/tx) to use per device
 switch="ovs" # switch: Currently supported is: testpmd, ovs, linuxbridge, linuxrouter, vpp
 switch_mode="default" # switch_mode: Currently supported list depends on $switch
 numa_mode="strict" # numa_mode: (for DPDK vswitches only)
-			# strict:    All PMD threads for all phys and virt devices use memory and cpu only
-			#            from the numa node where the physical adapters are located.
-			#	     This implies the VMs must be on the same node.
-			# preferred: Just like 'strict', but the vswitch also has memory and in some cases
-			#            uses cpu from the non-local NUMA nodes.
-			# cross:     The PMD threads for all phys devices use memory and cpu from
-			#            the local NUMA node, but VMs are present on another NUMA node,
-			#            and so the PMD threads for those virt devices are also on
-			#            another NUMA node.
+			#strict:    All PMD threads for all phys and virt devices use memory and cpu only 
+			#           from the numa node where the physical adapters are located.           
+			#           This implies the VMs must be on the same node.                        
+			#preferred: Just like 'strict', but the vswitch also has memory and in some cases 
+			#           uses cpu from the non-local NUMA nodes.                               
+			#cross:     The PMD threads for all phys devices use memory and cpu from          
+			#           the local NUMA node, but VMs are present on another NUMA node,        
+			#           and so the PMD threads for those virt devices are also on             
+			#           another NUMA node.                                                    
 overlay="none" # overlay: Currently supported is: none (for all switch types) and vxlan (for linuxbridge and ovs)
 ovs_build="rpm" # either "rpm" or "src"
 dpdk_nic_kmod="vfio-pci" # dpdk-devbind: the kernel module to use when assigning a network device to a userspace program (DPDK application)
@@ -457,6 +457,10 @@ function get_sd_netdev_name() {
 				echo "$veth_name"
 				return
 			fi
+			if [ "$veth_phys_port_name" == "pf1vf$dev_port" ]; then
+				echo "$veth_name"
+				return
+			fi
 			if [ "$veth_phys_port_name" == "$dev_port" ]; then
 				echo "$veth_name"
 				return
@@ -478,29 +482,42 @@ if [ $? -ne 0 ]; then
 	printf "\tThe following options are available:\n\n"
 	#              1   2         3         4         5         6         7         8         9         0         1         2         3
 	#              678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012
-	printf -- "\t\t             --[pci-]devices=str,str    two PCI locations of Ethenret adapters to use, like --devices=0000:83:00.0,0000:86:00.0\n"
-	printf -- "\t\t                                        you can list the same PCI device twice only if the physical function has 2 netdev devices\n"
-	printf -- "\t\t             --device-ports=int,int     If a PCI device has more than 1 netdev, then you need to specify the port ID for each device.  Port enumeration starts with \"0\"\n"
-	printf -- "\t\t             --no-kill                  Don't kill all OVS and VPP sessions (however, anything process owning a DPDK device will still be killed)\n"
-	printf -- "\t\t             --vhost-affinity=str       local [default]: use same numa node as PCI device\n"
-	printf -- "\t\t                                        remote: use opposite numa node as PCI device\n"
-	printf -- "\t\t             --nr-queues=int            the number of queues per device\n"
-	printf -- "\t\t             --use-ht=[y|n]             y=use both cpu-threads on HT core, n=only use 1 cpu-thread per core\n"
-	printf -- "\t\t                                        Using HT has better per/core throuhgput, but not using HT has better per-queue throughput\n"
-	printf -- "\t\t             --overlay=[none|vxlan]     network overlay used, if any (not supported on all bridge types)\n"
-	printf -- "\t\t             --topology=str             pp (which is just 2 physical devices on same bridge) or pvp (which is 2 bridges, each with a phys port and a virtio port)\n"
-	printf -- "\t\t             --dataplane=str            dpdk or kernel kernel-hw-offload\n"
-	printf -- "\t\t             --desc-override            override default size for descriptor size\n"
-	printf -- "\t\t             --switch=str               testpmd, ovs, vpp, linuxrouter, or linuxbridge\n"
-	printf -- "\t\t             --switch-mode=str          Mode that the selected switch operates in.  Modes differ between switches\n"
+	printf -- "\t\t--[pci-]devices=str/port,str/port ..... Two PCI locations of Ethenret adapters to use, like:\n"
+        printf -- "\t\t                                        '--devices=0000:83:00.0/0,0000:86:00.0/0'.  Port numbers are optional\n"
+	printf -- "\t\t                                        You can list the same PCI device twice only if the physical function has \n"
+	printf -- "\t\t                                        two netdev devices\n\n"
+	printf -- "\t\t--device-ports=int,int ................ If a PCI device has more than 1 netdev, then you need to specify the port ID for each device.  Port enumeration starts with \"0\"\n\n"
+	printf -- "\t\t--no-kill ............................. Don't kill all OVS and VPP sessions (however, anything process owning a DPDK device will still be killed)\n\n"
+	printf -- "\t\t--vhost-affinity=str .................. local [default]: Use same numa node as PCI device\n"
+	printf -- "\t\t                                        remote:          Use opposite numa node as PCI device\n\n"
+	printf -- "\t\t--nr-queues=int ....................... The number of queues per device\n\n"
+	printf -- "\t\t--use-ht=[y|n] ........................ y=Use both cpu-threads on HT core\n"
+	printf -- "\t\t                                        n=Only use 1 cpu-thread per core\n"
+	printf -- "\t\t                                        Note: Using HT has better per/core throuhgput, but not using HT has better per-queue throughput\n\n"
+	printf -- "\t\t--overlay=[none|vxlan] ................ Network overlay used, if any (not supported on all bridge types)\n\n"
+	printf -- "\t\t--topology=str ........................ pp:            Two physical devices on same bridge\n"
+        printf -- "\t\t                                        pvp or pv,vp:  Two bridges, each with a phys port and a virtio port)\n\n"
+	printf -- "\t\t--dataplane=str ....................... dpdk, kernel, or kernel-hw-offload\n\n"
+	printf -- "\t\t--desc-override ....................... Override default size for descriptor size\n\n"
+	printf -- "\t\t--switch=str .......................... testpmd, ovs, vpp, linuxrouter, or linuxbridge\n\n"
+	printf -- "\t\t--switch-mode=str ..................... Mode that the selected switch operates in.  Modes differ between switches\n"
 	printf -- "\t\t                                        \tlinuxbridge: default\n"
 	printf -- "\t\t                                        \tlinuxrouter: default\n"
 	printf -- "\t\t                                        \ttestpmd:     default\n"
 	printf -- "\t\t                                        \tovs:         default/direct-flow-rule, l2-bridge\n"
-	printf -- "\t\t                                        \tvpp:         default/xconnect, l2-bridge\n"
-	printf -- "\t\t             --testpmd-path=str         override the default location for the testpmd binary (${testpmd_path})\n"
-	printf -- "\t\t             --vpp-version=str          control which VPP command set to use: 17.04, 17.07, or 17.10 (default is ${vpp_version})\n"
-	printf -- "\t\t             --dpdk-nic-kmod=str        use this kernel modeule for the devices (default is $dpdk_nic_kmod)\n"
+	printf -- "\t\t                                        \tvpp:         default/xconnect, l2-bridge\n\n"
+	printf -- "\t\t--testpmd-path=str .................... Override the default location for the testpmd binary (${testpmd_path})\n\n"
+	printf -- "\t\t--vpp-version=str ..................... Control which VPP command set to use: 17.04, 17.07, or 17.10 (default is ${vpp_version})\n\n"
+	printf -- "\t\t--dpdk-nic-kmod=str ................... Use this kernel modeule for the devices (default is $dpdk_nic_kmod)\n\n"
+	printf -- "\t\t--numa-mode=str ....................... strict:    (default).  All PMD threads for all phys and virt devices use memory and cpu only\n"
+        printf -- "\t\t                                                   from the numa node where the physical adapters are located.\n"
+        printf -- "\t\t                                                   This implies the VMs must be on the same node.\n"
+	printf -- "\t\t                                        preferred: Just like 'strict', but the vswitch also has memory and in some cases\n"
+	printf -- "\t\t                                                   uses cpu from the non-local NUMA nodes.\n"
+	printf -- "\t\t                                        cross:     The PMD threads for all phys devices use memory and cpu from\n"
+	printf -- "\t\t                                                   the local NUMA node, but VMs are present on another NUMA node,\n"
+	printf -- "\t\t                                                   and so the PMD threads for those virt devices are also on\n"
+	printf -- "\t\t                                                   another NUMA node.\n"
 	exit_error ""
 fi
 echo opts: [$opts]
@@ -1527,7 +1544,7 @@ case $switch in
 					ethtool -K $sd_eth_name hw-tc-offload on
 				fi
 				bridge_name="br-${dev_netdev_name}"
-				log "  creating OVS bridge: $bridge_name"
+				log "  creating OVS bridge: $bridge_name with devices $dev_netdev_name and $sd_eth_name"
                                $ovs_bin/ovs-vsctl add-br $bridge_name || exit
 				ip l s $bridge_name up || exit
                                $ovs_bin/ovs-vsctl add-port $bridge_name $dev_netdev_name || exit
@@ -1539,7 +1556,7 @@ case $switch in
 				ip link s $vf_eth_name promisc on || exit
 				vf_eth_names="$vf_eth_names $vf_eth_name"
 				vf_devs="$vf_devs $vf_loc"
-				log "  ovs bridge $bridge_name has PF $dev_netdev_name and represtner $sd_eth_name, which represents VF $vf_eth_name"
+				log "  ovs bridge $bridge_name has PF $dev_netdev_name and representor $sd_eth_name, which represents VF $vf_eth_name"
 				((pf_count++))
 			# Is there a netdev for the PF which has no port name?  If there is, it needs its "link" up
 			pf_eth_name=""
