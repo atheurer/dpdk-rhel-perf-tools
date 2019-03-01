@@ -315,9 +315,7 @@ function get_pmd_cpus() {
 		iso_cpus_list=`get_iso_cpus`
 		node_iso_cpus_list=`intersect_cpus "$cpus_list" "$iso_cpus_list"`
 		if [ "$use_ht" == "n" ]; then
-			set -x
 			node_iso_cpus_list=`remove_sibling_cpus $node_iso_cpus_list`
-			set +x
 		fi
 		if [ "$node_iso_cpus_list" == "" ]; then
 			echo ""
