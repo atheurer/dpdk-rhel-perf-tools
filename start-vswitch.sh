@@ -259,6 +259,32 @@ function intersect_cpus() {
 	echo "$intersect_cpu_list"
 }
 
+function remove_sibling_cpus() {
+	local cpu_range=$1
+	local cpu_list=`convert_number_range $cpu_range`
+	local no_sibling_list=""
+	local socket_core_id_list="," #commas on front and end of list and in between IDs for easier grepping
+	while [ ! -z "$cpu_list" ]; do
+		this_cpu=`echo $cpu_list | awk -F, '{print $1}'`
+		cpu_list=`echo $cpu_list | sed -e s/^$this_cpu//`
+		cpu_list=`echo $cpu_list | sed -e s/^,//`
+		core=`cat /sys/devices/system/cpu/cpu$this_cpu/topology/core_id`
+		socket=`cat /sys/devices/system/cpu/cpu$this_cpu/topology/physical_package_id`
+		socket_core_id="$socket:$core"
+		if echo $socket_core_id_list | grep -q ",$socket_core_id,"; then
+			# this core has already been taken
+			continue
+		else
+			# first time this core has been found, use it
+			socket_core_id_list="${socket_core_id_list}${socket_core_id},"
+			no_sibling_list="$no_sibling_list,$this_cpu"
+		fi
+
+	done
+	no_sibling_list=`echo $no_sibling_list | sed -e s/^,//`
+	echo "$no_sibling_list"
+}
+
 function get_pmd_cpus() {
 	local devs=$1
 	local nr_queues=$2
@@ -288,6 +314,11 @@ function get_pmd_cpus() {
 		cpus_list=`node_cpus_list "$node_id"`
 		iso_cpus_list=`get_iso_cpus`
 		node_iso_cpus_list=`intersect_cpus "$cpus_list" "$iso_cpus_list"`
+		if [ "$use_ht" == "n" ]; then
+			set -x
+			node_iso_cpus_list=`remove_sibling_cpus $node_iso_cpus_list`
+			set +x
+		fi
 		if [ "$node_iso_cpus_list" == "" ]; then
 			echo ""
 			exit
@@ -309,9 +340,21 @@ function get_pmd_cpus() {
 				# allocate a new cpu
 				new_cpu="`echo $node_iso_cpus_list | awk -F, '{print $1}'`"
 			fi
+			if [ "$use_ht" == "n" ]; then
+				# make sure sibling threads don't get used next time a isolated cpu is found
+				sibling_cpus=`cat /sys/devices/system/cpu/cpu$new_cpu/topology/thread_siblings_list`
+				sibling_cpus=`convert_number_range $sibling_cpus`
+				sibling_cpus=`sub_from_list $sibling_cpus $new_cpu`
+				for i in `echo $sibling_cpus | sed -e 's/,/ /g'`; do
+					log_cpu_usage "$i" "idle-sibling-thread"
+					if [ $? -gt 0 ]; then
+						exit 1
+					fi
+				done
+			fi
 			log_cpu_usage "$new_cpu" "$cpu_usage"
-			if [ $? != 0 ]; then
-				return 1 # something went wrong, abort
+			if [ $? -gt 0 ]; then
+				exit 1
 			fi
 			node_iso_cpus_list=`sub_from_list "$node_iso_cpus_list" "$new_cpu"`
 			pmd_cpus_list="$pmd_cpus_list,$new_cpu"
@@ -1339,14 +1382,13 @@ case $switch in
 		    ;;
 		    pvp|pv,vp)   # 10GbP1<-->VM1P1, VM1P2<-->10GbP2
 		    # create the bridges/ports with 1 phys dev and 1 virt dev per bridge, to be used for 1 VM to forward packets
-                    echo "BILL1 ***********************"
 		    vhost_ports=""
+		    ifaces=""
 		    for i in `seq 0 1`; do
 			    phy_br="phy-br-$i"
 			    pci_dev_index=$(( i + 1 ))
 			    pci_dev=`echo ${devs} | awk -F, "{ print \\$${pci_dev_index}}"`
                             pci_dev=`echo "$pci_dev" | sed 's/..$//'`
-                            echo "BILL pci_dev = $pci_dev"
 			    pci_node=`cat /sys/bus/pci/devices/"$pci_dev"/numa_node`
 			    if [ "$vhost_affinity" == "local" ]; then
 				    vhost_port="vhost-user-$i-n$pci_node"
@@ -1367,8 +1409,12 @@ case $switch in
                            $ovs_bin/ovs-vsctl --if-exists del-br $phy_br
                            $ovs_bin/ovs-vsctl add-br $phy_br -- set bridge $phy_br datapath_type=netdev
                            $ovs_bin/ovs-vsctl add-port $phy_br ${phys_port_name} -- set Interface ${phys_port_name} type=dpdk ${phys_port_args}
+			   ifaces="$ifaces,${phys_port_name}"
+			   phy_ifaces="$ifaces,${phys_port_name}"
 			    if [ -z "$overlay" -o "$overlay" == "none" -o "$overlay" == "half-vxlan" -a $i -eq 1 ]; then
                                    $ovs_bin/ovs-vsctl add-port $phy_br $vhost_port -- set Interface $vhost_port type=dpdkvhostuser
+			   	   ifaces="$ifaces,$vhost_port"
+			   	   vhu_ifaces="$ifaces,$vhost_port"
 				    if [ ! -z "$vhu_desc_override" ]; then
 					    echo "overriding vhostuser descriptors/queue with $vhu_desc_override"
                                            $ovs_bin/ovs-vsctl set Interface $vhost_port options:n_txq_desc=$vhu_desc_override
@@ -1396,6 +1442,7 @@ case $switch in
 				    fi
 			    fi
 		    done
+		    ifaces=`echo $ifaces | sed -e s/^,//`
 		    vhost_ports=`echo $vhost_ports | sed -e 's/^,//'`
 		    ovs_ports=4
 		    ;;
@@ -1438,10 +1485,28 @@ case $switch in
 	    echo pmd_cpu_mask is [$pmd_cpu_mask]
 	    vm_cpus=`sub_from_list $ded_cpus_list $pmdcpus`
 	    echo vm_cpus is [$vm_cpus]
-           $ovs_bin/ovs-vsctl set Open_vSwitch . other_config:pmd-cpu-mask=$pmd_cpu_mask
+            $ovs_bin/ovs-vsctl set Open_vSwitch . other_config:pmd-cpu-mask=$pmd_cpu_mask
+	    #if using HT, bind 1 PF and 1 VHU to same core
+   	    if [ "$use_ht" == "y" ]; then
+		while [ ! -z "$pmdcpus" ]; do
+		    this_cpu=`echo $pmdcpus | awk -F, '{print $1}'`
+		    cpu_siblings_range=`cat /sys/devices/system/cpu/cpu$this_cpu/topology/thread_siblings_list`
+		    cpu_siblings_list=`convert_number_range $cpu_siblings_range`
+		    pmdcpus=`sub_from_list $pmdcpus $cpu_siblings_list`
+		    while [ ! -z "$cpu_siblings_list" ]; do
+			this_cpu_thread=`echo $cpu_siblings_list | awk -F, '{print $1}'`
+			cpu_siblings_list=`sub_from_list $cpu_siblings_list $this_cpu_thread`
+			iface=`echo $ifaces | awk -F, '{print $1}'`
+			ifaces=`echo $ifaces | sed -e s/^$iface,//`
+			echo $ovs_bin/ovs-vsctl set Interface $iface other_config:pmd-rxq-affinity=0:$this_cpu_thread
+			$ovs_bin/ovs-vsctl set Interface $iface other_config:pmd-rxq-affinity=0:$this_cpu_thread
+		    done
+		done
+	    fi
 	    echo "PMD cpumask command: ovs-vsctl set Open_vSwitch . other_config:pmd-cpu-mask=$pmd_cpu_mask"
 	    echo "PMD thread assinments:"
-           $ovs_bin/ovs-appctl dpif-netdev/pmd-rxq-show
+            $ovs_bin/ovs-appctl dpif-netdev/pmd-rxq-show
+	    
     else #dataplane=kernel-hw-offload
 	    log "configuring ovs with network topology: $topology"
 	    case $topology in
@@ -1634,6 +1699,7 @@ case $switch in
 		  --nb-ports=2 --portmask=$portmask --auto-start --rxq=$queues --txq=$queues ${rss_flags}\
 		  --rxd=$testpmd_descriptors --txd=$testpmd_descriptors $vlan_opts >/tmp/testpmd-$i"
 		echo testpmd_cmd: $testpmd_cmd
+		echo $testpmd_cmd >/tmp/testpmd-$i-cmd.txt
 		screen -dmS testpmd-$i bash -c "$testpmd_cmd"
 		ded_cpus_list=`sub_from_list $ded_cpus_list $pmd_cpus`
 		;;
@@ -1677,6 +1743,7 @@ case $switch in
 			  $testpmd_numa --nb-ports=2 --portmask=3 --auto-start --rxq=$queues --txq=$queues ${rss_flags}\
 			  --rxd=$testpmd_descriptors --txd=$testpmd_descriptors $vlan_opts >/tmp/testpmd-$i"
 			echo testpmd_cmd: $testpmd_cmd
+			echo $testpmd_cmd >/tmp/testpmd-$i-cmd.txt
 			screen -dmS testpmd-$i bash -c "$testpmd_cmd"
 			count=0
 			while [ ! -e $vhost_port -a $count -le 30 ]; do
