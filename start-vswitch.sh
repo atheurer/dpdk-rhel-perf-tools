@@ -1711,7 +1711,8 @@ case $switch in
 		for i in `seq 0 1`; do
 			pci_dev_index=$(( i + 1 ))
 			pci_dev=`echo ${devs} | awk -F, "{ print \\$${pci_dev_index}}"`
-			pci_node=`cat /sys/bus/pci/devices/"$pci_dev"/numa_node`
+			pci_loc=`get_dev_loc $pci_dev`
+			pci_node=`cat /sys/bus/pci/devices/"$pci_loc"/numa_node`
 			vhost_port="/var/run/openvswitch/vhost-user-$i-n$pci_node"
 			if [ "$vhost_affinity" == "local" ]; then
 				vhost_port="/var/run/openvswitch/vhost-user-$i-n$pci_node"
@@ -1720,7 +1721,7 @@ case $switch in
 				remote_pci_node=`echo $remote_pci_nodes | awk -F, '{print $1}'`
 				vhost_port="/var/run/openvswitch/vhost-user-$i-n$remote_pci_node"
 			fi
-			pmd_cpus=`get_pmd_cpus "$pci_dev,$vhost_port" $queues "testpmd-pmd"`
+			pmd_cpus=`get_pmd_cpus "$pci_loc,$vhost_port" $queues "testpmd-pmd"`
 			if [ -z "$pmd_cpus" ]; then
 				exit_error "Could not allocate PMD threads.  Do you have enough isolated cpus in the right NUAM nodes?"
 			fi
@@ -1739,7 +1740,7 @@ case $switch in
 				vlan_opts=""
 			fi
 			testpmd_cmd="${testpmd_path} -l $console_cpu,$pmd_cpus --socket-mem $testpmd_socket_mem_opt -n 4\
-			  --proc-type auto --file-prefix testpmd$i -w $pci_dev --vdev eth_vhost0,iface=$vhost_port -- --nb-cores=$pmd_threads\
+			  --proc-type auto --file-prefix testpmd$i -w $pci_loc --vdev eth_vhost0,iface=$vhost_port -- --nb-cores=$pmd_threads\
 			  $testpmd_numa --nb-ports=2 --portmask=3 --auto-start --rxq=$queues --txq=$queues ${rss_flags}\
 			  --rxd=$testpmd_descriptors --txd=$testpmd_descriptors $vlan_opts >/tmp/testpmd-$i"
 			echo testpmd_cmd: $testpmd_cmd
