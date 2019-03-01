@@ -576,7 +576,14 @@ while true; do
 		--devices)
 		shift
 		if [ -n "$1" ]; then
-			devs="$1"
+			for dev in `echo $1 | sed -e 's/,/ /g'`; do
+				if echo $dev | grep -q -- /; then
+					devs="$devs,$dev"
+				else
+					devs="$devs,$dev/0"
+				fi
+			done
+			devs=`echo $devs | sed -e s/^,//`
 			echo devs: [$devs]
 			shift
 		fi
