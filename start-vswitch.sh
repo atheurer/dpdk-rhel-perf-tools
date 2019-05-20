@@ -792,6 +792,9 @@ else
        ovs_etc="/usr/local/etc/openvswitch"
 fi
 
+# Get RHEL major version.  Sometimes /sysfs changes between versions
+rhel_major_version=`cat /etc/redhat-release | tr -dc '0-9.'|cut -d \. -f1`
+
 # either "rpm" or "src"
 
 num_vfs_per_pf=1
@@ -1604,7 +1607,11 @@ case $switch in
 				port_id=`get_dev_port $this_dev`
 				vf_loc=`readlink /sys/bus/pci/devices/$pf_loc/virtfn$port_id | sed -e 'sX../XX'` # the PCI location of the VF
 				log "  virtual function's PCI locaton that's used from this device: $vf_loc"
-				vf_eth_name=`/bin/ls /sys/bus/pci/devices/"$vf_loc"/net | grep "_$port_id"`
+				if [ $rhel_major_version -eq 8 ]; then
+					vf_eth_name=`/bin/ls /sys/bus/pci/devices/"$vf_loc"/net | grep "$dev_netdev_name"`
+				else
+					vf_eth_name=`/bin/ls /sys/bus/pci/devices/"$vf_loc"/net | grep "_$port_id"`
+				fi
 				log "  netdev name for this virtual function: $vf_eth_name"
 				sd_eth_name=`get_sd_netdev_name $this_dev` || exit_error "  could not find a representor device for $this_dev ($dev_eth_name)"
 				log "  netdev name for the switchdev (representor) device: $sd_eth_name"
