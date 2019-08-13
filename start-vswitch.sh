@@ -1230,7 +1230,7 @@ ovs) #switch configuration
 	log "starting ovs-vswitchd"
 	case $dataplane in
 	"dpdk")
-		if echo $ovs_ver | grep -q "^2\.6\|^2\.7\|^2\.8\|^2\.9\|^2\.10"; then
+		if echo $ovs_ver | grep -q "^2\.6\|^2\.7\|^2\.8\|^2\.9\|^2\.10\|^2\.11\|^2\.12"; then
 			dpdk_opts=""
 			$ovs_bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-init=true
 
@@ -1281,7 +1281,7 @@ ovs) #switch configuration
 	$ovs_bin/ovs-vsctl --no-wait init
 
 	if [ "$dataplane" == "dpdk" ]; then
-		if echo $ovs_ver | grep -q "^2\.7\|^2\.8\|^2\.9\|^2\.10"; then
+		if echo $ovs_ver | grep -q "^2\.7\|^2\.8\|^2\.9\|^2\.10\|^2\.11\|^2\.12"; then
 			pci_devs=`get_devs_locs $devs`
 
 			ovs_dpdk_interface_0_name="dpdk-0"
@@ -1377,7 +1377,7 @@ ovs) #switch configuration
 				log "vhost_port: $vhost_port"
 				vhost_ports="$vhost_ports,$vhost_port"
 
-				if echo $ovs_ver | grep -q "^2\.7\|^2\.8\|^2\.9\|^2\.10"; then
+				if echo $ovs_ver | grep -q "^2\.7\|^2\.8\|^2\.9\|^2\.10\|^2\.11\|^2\.12"; then
 					phys_port_name="dpdk-${i}"
 					phys_port_args="options:dpdk-devargs=${pci_dev}"
 				else
