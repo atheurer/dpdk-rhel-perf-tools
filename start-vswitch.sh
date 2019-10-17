@@ -4,7 +4,7 @@
 # -use multi-queue (for DPDK)
 # -bind DPDK PMDs to optimal CPUs
 # -for pvp topologies, provide a list of optimal cpus available for the VM
-# configure a network overlay, like VxLAN
+# configure an overlay network such as VxLAN
 
 # The following features are not implemented but would be nice to add:
 # -for ovs, configure x flows
@@ -12,45 +12,231 @@
 # -configure VLAN
 # -configure a firewall
 
-# defaults
-topology="pp" # two physical devices on one switch
-	      # topology is desctibed by a list of 1 or more switches separated by commas
-	      # the supported interfaces on a switch are:
-	      # p: a physical port
-	      # v: a virtio-net "backend" port, like dpdkvhostuser or vhost-net (dependig on dataplane)
-	      # V: a virtio-net "frontend" port, like virtio-pci in a VM (not yet implemented)
-	      # P: a patch-port for OVS (not yet implemented)
-queues=1 # queues: Number of queue-pairs (rx/tx) to use per device
-switch="ovs" # switch: Currently supported is: testpmd, ovs, linuxbridge, linuxrouter, vpp
-switch_mode="default" # switch_mode: Currently supported list depends on $switch
-numa_mode="strict" # numa_mode: (for DPDK vswitches only)
-			#strict:    All PMD threads for all phys and virt devices use memory and cpu only 
-			#           from the numa node where the physical adapters are located.           
-			#           This implies the VMs must be on the same node.                        
-			#preferred: Just like 'strict', but the vswitch also has memory and in some cases 
-			#           uses cpu from the non-local NUMA nodes.                               
-			#cross:     The PMD threads for all phys devices use memory and cpu from          
-			#           the local NUMA node, but VMs are present on another NUMA node,        
-			#           and so the PMD threads for those virt devices are also on             
-			#           another NUMA node.                                                    
-overlay="none" # overlay: Currently supported is: none (for all switch types) and vxlan (for linuxbridge and ovs)
-ovs_build="rpm" # either "rpm" or "src"
-dpdk_nic_kmod="vfio-pci" # dpdk-devbind: the kernel module to use when assigning a network device to a userspace program (DPDK application)
+
+
+###############################################################################
+# Default values
+###############################################################################
+
+#
+# topology:
+#
+#	Two physical devices on one switch.  'topology' is desctibed by a list 
+#	of 1 or more switches separated by commas.  The supported interfaces on 
+#	a switch are:
+#
+#	p:		A physical port.  This may include host physical ports, or 
+#			SR-IOV PCIe or virtio devices seen within a guest
+#
+#	v:		A virtio-net interface like dpdkvhostuser or vhost-net (depending on dataplane)
+#
+topology="pp"	
+
+
+#
+# queues:
+#
+#	Number of queue-pairs (rx/tx) to use per device	
+#
+queues=1
+
+
+#
+# switch:
+#
+#	Type of forwarding engine to be used on the DUT topology.
+#	Currently supported switch types:
+#
+#	testpmd:	DPDK's L2 forwarding test program
+#
+#	ovs:		Open vSwitch
+#
+#	linuxbridge:	L2 kernel networking stack
+#
+#	linuxrouter:	L3 kernel networking stack
+#
+switch="ovs"
+
+
+#
+# switch_mode:
+#
+# 	Configuration of the $switch in use.  Currently supported list depends on $switch.
+#	Modes support by switch type are:
+#
+#	linuxbridge:	default
+#
+#	linuxrouter:	default
+#
+#	testpmd:	default
+#
+#	ovs:		default/direct-flow-rule, l2-bridge
+#
+switch_mode="default"
+
+
+#
+# numa_mode:
+#
+#	'numa_mode' is for DPDK vswitches only.
+#
+#	strict:		All PMD threads for all phys and virt devices use memory and cpu only 
+#			from the numa node where the physical adapters are located.
+#			This implies the VMs must be on the same node.
+#
+#	preferred:	Just like 'strict', but the vswitch also has memory and in some cases 
+#			uses cpu from the non-local NUMA nodes.
+#
+#	cross:		The PMD threads for all phys devices use memory and cpu from
+#			the local NUMA node, but VMs are present on another NUMA node,
+#			and so the PMD threads for those virt devices are also on
+#			another NUMA node.
+#
+numa_mode="strict" 
+
+
+#
+# overlay_network:
+#
+#	Currently supported are the following overlay network types:
+#
+#	none:		For all switch types
+#
+#	vxlan:		For linuxbridge and ovs
+#
+overlay_network="none" 
+
+
+#
+# ovs_build:
+#
+#	Specify to use OVS either from:
+#
+#	rpm:		Pre-built package
+#
+#	src:		Manually built and installed
+#
+ovs_build="rpm"
+
+
+#
+# dpdk_nic_kmod:
+#
+#	The kernel module to use when assigning an Intel network device to a 
+#	userspace program (DPDK application)
+#
+dpdk_nic_kmod="vfio-pci"
+
+
+#
+# dataplane:
+#
+#	The type of forwarding plane to be used on the DUT.
+#
+#	dpdk:			Intel's Data Plane Development Kit
+#
+#	kernel:			The Linux kernel's networking stack
+#
+#	kernel-hw-offload:	OVS dataplane handled in NIC hardware
+#
 dataplane="dpdk"
+
+
+#
+# use_ht:
+#
+#	Specify if hyperthreaded processors should be used or not for
+#	forwading packets
+#
+#	y:			yes
+#
+#	n:			no
+#
 use_ht="y"
-testpmd_ver="v17.05"
-#testpmd_path="/opt/dpdk/build/${testpmd_ver}/bin/testpmd"
+
+
+#
+# testpmd_path:
+#
+#	Specifies the location of DPDK's L2 forwarding program testpmd
+#
 testpmd_path="/usr/bin/testpmd"
-supported_switches="linuxbridge ovs linuxrouter vpp testpmd"
-pci_descriptors=2048 # use this as our default descriptor size
-pci_desc_override="" # use to override the desriptor size of any of the vswitches here.  
-vhu_desc_override="" # use to override the desriptor size of any of the vswitches here.  
-vpp_version="17.04"
+
+
+#
+# supported_switches:
+#
+#	The list of supported switches that may be used upon the DUT
+#
+supported_switches="linuxbridge ovs linuxrouter testpmd"
+
+
+#
+# pci_descriptors:
+#
+#	Sets the DPDK physical port queue size.
+#	NOTE:  Also used to set testpmd rxd/txd ring size.  We may want to make this separate
+#       from the DPDK physical port descriptor programming.
+#
+#	Size should probably not be larger than 2048.  Using a size of 4096 may have a negative 
+#	impact upon performance.  See:  http://docs.openvswitch.org/en/latest/intro/install/dpdk/
+#	
+pci_descriptors=2048
+
+
+#
+# pci_desc_ovveride:
+#
+#	Used to override the desriptor size of any of the vswitches here.  
+#
+pci_desc_override="" 
+
+
+#
+# vhu_desc_override:
+#
+#	Use to override the desriptor size of any of the vswitches here. 
+#	NOTE:  This needs to be fixed given we also have pci_desc_override as
+#	well as pci_descriptors all doing similar things
+#
+vhu_desc_override=""
+
+
+#
+# cpu_usage_file:
+#
+#	After the vswitch is started, it must decide which host cpus the VM uses.  
+#	The file $cpu_usage_file, defaulting to /var/log/isolated_cpu_usage.conf, 
+#	shows which cpus are used for the vswitch and which cpus are left for the 
+#	VM.  The shell script can be used virt-pin.sh to pin the vcpus. It will read 
+#	the /var/log/isolated_cpu_usage.conf ($cpu_usage_file) file to make sure 
+#	it does not use cpus already used by the vswitch.
+#
 cpu_usage_file="/var/log/isolated_cpu_usage.conf"
-vhost_affinity="local" ## this is not working yet # local: the vhost interface will reside in the same node as the physical interface on the same bridge
-		       # remote: The vhost interface will reside in remote node as the physical interface on the same bridge
-		       # this locality is an assumption and must match what was configured when VMs are created
+
+
+#
+# vhost_affinity:
+#
+# 	NOTE:  This is not working yet 
+#
+# 	local: the vhost interface will reside in the same node as the physical interface on the same bridge
+#
+#  	remote: The vhost interface will reside in remote node as the physical interface on the same bridge
+#
+#	This locality is an assumption and must match what was configured when VMs are created
+#
+vhost_affinity="local"
+
+
+#
+# no_kill:
+#
+# Don't kill all OVS sessions.  However, any process 
+# owning a DPDK device will still be killed
+#
 no_kill=0
+
 
 function log() {
 	echo -e "start-vswitch: $1"
@@ -388,41 +574,7 @@ function set_ovs_bridge_mode() {
 	esac
 }
 
-function set_vpp_bridge_mode() {
-	local interface_1=$1
-	local interface_2=$2
-	local switch_mode=$3
-	local bridge=$4
 
-	case "${switch_mode}" in
-		"l2-bridge")
-			vppctl set interface l2 bridge ${interface_1} ${bridge}
-			vppctl set interface l2 bridge ${interface_2} ${bridge}
-			;;
-		"default"|"xconnect")
-			vppctl set interface l2 xconnect ${interface_1} ${interface_2}
-			vppctl set interface l2 xconnect ${interface_2} ${interface_1}
-			;;
-	esac
-}
-
-function vpp_create_vhost_user() {
-	local socket_name=/var/run/vpp/${1}
-	local device_name=""
-
-	case "${vpp_version}" in
-		"17.07"|"17.10")
-		device_name=$(vppctl create vhost-user socket ${socket_name} server)
-		;;
-		"17.04"|*)
-		device_name=$(vppctl create vhost socket ${socket_name} server)
-		;;
-	esac
-
-	chmod 777 ${socket_name}
-
-	echo "${device_name}"
-}
 
 function get_dev_loc() {
 	# input should be pci_location/port-number, like 0000:86:0.0/1
@@ -510,7 +662,7 @@ function get_sd_netdev_name() {
 }
 
 # Process options and arguments
-opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "no-kill,vhost-affinity:,numa-mode:,desc-override:,vhost_devices:,pci-devices:,devices:,nr-queues:,use-ht:,overlay:,topology:,dataplane:,switch:,switch-mode:,testpmd-path:,vpp-version:,dpdk-nic-kmod:,prefix:,pci-desc-override:" -n "getopt.sh" -- "$@")
+opts=$(getopt -q -o i:c:t:r:m:p:M:S:C:o --longoptions "no-kill,vhost-affinity:,numa-mode:,desc-override:,vhost_devices:,pci-devices:,devices:,nr-queues:,use-ht:,overlay-network:,topology:,dataplane:,switch:,switch-mode:,testpmd-path:,dpdk-nic-kmod:,prefix:,pci-desc-override:,print-config" -n "getopt.sh" -- "$@")
 if [ $? -ne 0 ]; then
 	printf -- "$*\n"
 	printf "\n"
@@ -523,27 +675,25 @@ if [ $? -ne 0 ]; then
 	printf -- "\t\t                                        You can list the same PCI device twice only if the physical function has \n"
 	printf -- "\t\t                                        two netdev devices\n\n"
 	printf -- "\t\t--device-ports=int,int ................ If a PCI device has more than 1 netdev, then you need to specify the port ID for each device.  Port enumeration starts with \"0\"\n\n"
-	printf -- "\t\t--no-kill ............................. Don't kill all OVS and VPP sessions (however, anything process owning a DPDK device will still be killed)\n\n"
+	printf -- "\t\t--no-kill ............................. Don't kill all OVS sessions (however, anything process owning a DPDK device will still be killed)\n\n"
 	printf -- "\t\t--vhost-affinity=str .................. local [default]: Use same numa node as PCI device\n"
 	printf -- "\t\t                                        remote:          Use opposite numa node as PCI device\n\n"
 	printf -- "\t\t--nr-queues=int ....................... The number of queues per device\n\n"
 	printf -- "\t\t--use-ht=[y|n] ........................ y=Use both cpu-threads on HT core\n"
 	printf -- "\t\t                                        n=Only use 1 cpu-thread per core\n"
 	printf -- "\t\t                                        Note: Using HT has better per/core throuhgput, but not using HT has better per-queue throughput\n\n"
-	printf -- "\t\t--overlay=[none|vxlan] ................ Network overlay used, if any (not supported on all bridge types)\n\n"
+	printf -- "\t\t--overlay-network=[none|vxlan] ........ Network overlay used, if any (not supported on all bridge types)\n\n"
 	printf -- "\t\t--topology=str ........................ pp:            Two physical devices on same bridge\n"
         printf -- "\t\t                                        pvp or pv,vp:  Two bridges, each with a phys port and a virtio port)\n\n"
 	printf -- "\t\t--dataplane=str ....................... dpdk, kernel, or kernel-hw-offload\n\n"
 	printf -- "\t\t--desc-override ....................... Override default size for descriptor size\n\n"
-	printf -- "\t\t--switch=str .......................... testpmd, ovs, vpp, linuxrouter, or linuxbridge\n\n"
+	printf -- "\t\t--switch=str .......................... testpmd, ovs, linuxrouter, or linuxbridge\n\n"
 	printf -- "\t\t--switch-mode=str ..................... Mode that the selected switch operates in.  Modes differ between switches\n"
 	printf -- "\t\t                                        \tlinuxbridge: default\n"
 	printf -- "\t\t                                        \tlinuxrouter: default\n"
 	printf -- "\t\t                                        \ttestpmd:     default\n"
 	printf -- "\t\t                                        \tovs:         default/direct-flow-rule, l2-bridge\n"
-	printf -- "\t\t                                        \tvpp:         default/xconnect, l2-bridge\n\n"
 	printf -- "\t\t--testpmd-path=str .................... Override the default location for the testpmd binary (${testpmd_path})\n\n"
-	printf -- "\t\t--vpp-version=str ..................... Control which VPP command set to use: 17.04, 17.07, or 17.10 (default is ${vpp_version})\n\n"
 	printf -- "\t\t--dpdk-nic-kmod=str ................... Use this kernel modeule for the devices (default is $dpdk_nic_kmod)\n\n"
 	printf -- "\t\t--numa-mode=str ....................... strict:    (default).  All PMD threads for all phys and virt devices use memory and cpu only\n"
         printf -- "\t\t                                                   from the numa node where the physical adapters are located.\n"
@@ -605,11 +755,11 @@ while true; do
 			shift
 		fi
 		;;
-		--overlay)
+		--overlay-network)
 		shift
 		if [ -n "$1" ]; then
-			overlay="$1"
-			log "overlay: [$overlay]"
+			overlay_network="$1"
+			log "overlay_network: [$overlay_network]"
 			shift
 		fi
 		;;
@@ -682,14 +832,6 @@ while true; do
 			log "testpmd_path: [${testpmd_path}]"
 		fi
 		;;
-		"--vpp-version")
-		shift
-		if [ -n "${1}" ]; then
-			vpp_version="${1}"
-			shift
-			log "vpp_version: [${vpp_version}]"
-		fi
-		;;
 		--numa-mode)
 		shift
 		if [ -n "$1" ]; then
@@ -713,6 +855,29 @@ while true; do
 			shift
 			log "prefix: [$prefix]"
 		fi
+		;;
+		--print-config)
+		shift
+		echo ""
+		echo "topology = $topology"	
+		echo "queues = $queues"	
+		echo "switch = $switch"
+		echo "switch_mode = $switch_mode"
+		echo "numa_mode = $numa_mode"
+		echo "overlay_network = $overlay_network"
+		echo "ovs_build = $ovs_build"
+		echo "dpdk_nic_kmod = $dpdk_nic_kmod"
+		echo "dataplane = $dataplane"
+		echo "use_ht = $use_ht"
+		echo "testpmd_path = $testpmd_path"
+		echo "supported_switches = $supported_switches"
+		echo "pci_descriptors = $pci_descriptors"
+		echo "pci_desc_override = $pci_descriptor_override"
+		echo "vhu_desc_override = $vhu_desc_override"
+		echo "cpu_usage_file = $cpu_usage_file"
+		echo "vhost_affinity = $vhost_affinity"
+		echo "no_kill = $no_kill"
+		echo ""
 		;;
 		--)
 		shift
@@ -740,15 +905,6 @@ case "${switch}" in
 	"ovs")
 		case "${switch_mode}" in
 			"default"|"direct-flow-rule"|"l2-bridge")
-				;;
-			*)
-				exit_error "switch=${switch} does not support switch_mode=${switch_mode}"
-				;;
-		esac
-		;;
-	"vpp")
-		case "${switch_mode}" in
-			"default"|"xconnect"|"l2-bridge")
 				;;
 			*)
 				exit_error "switch=${switch} does not support switch_mode=${switch_mode}"
@@ -821,13 +977,11 @@ for this_dev in `echo $devs | sed -e 's/,/ /g'`; do
 done
 
 if [ $no_kill -ne 1 ]; then
-	# completely kill and remove old ovs/vpp configuration
+	# completely kill and remove old ovs configuration
 	log "stopping ovs"
 	killall -q -w ovs-vswitchd
 	killall -q -w ovsdb-server
 	killall -q -w ovsdb-server ovs-vswitchd
-	log "stopping vpp"
-	killall -q -w vpp
 	log "stopping testpmd"
 	killall -q -w testpmd
 	rm -rf $ovs_run/ovs-vswitchd.pid
@@ -1026,7 +1180,7 @@ linuxbridge) #switch configuration
 			eth_dev=`echo $eth_devs | awk '{print $1}'`
 			eth_devs=`echo $eth_devs | sed -e s/$eth_dev//`
 
-			if [ "$overlay" == "vxlan" ]; then
+			if [ "$overlay_network" == "vxlan" ]; then
 				vxlan_br="vxlan-br-$i"
 				vxlan_port="vxlan-$i"
 				vni=`echo "100 + $i" | bc`
@@ -1041,7 +1195,7 @@ linuxbridge) #switch configuration
 				brctl addbr $vxlan_br
 				ip l set dev $vxlan_br up
 				brctl addif $vxlan_br $vxlan_port
-			else # no overlay
+			else # no overlay network
 				phy_br="phy-br-$i"
 
 				if /bin/ls /sys/class/net | grep -q ^$phy_br; then
@@ -1055,227 +1209,6 @@ linuxbridge) #switch configuration
 				brctl addif $phy_br $eth_dev
 			fi
 		done
-		;;
-	esac
-	;;
-vpp) #switch configuration
-	vhost_devs=""
-
-	case ${topology} in
-	"pp")
-		vpp_ports=2
-		;;
-	"pvp"|"pv,vp")
-		vpp_ports=4
-		for i in `seq 0 1`; do
-			pci_dev_index=$(( i + 1 ))
-			pci_dev=`echo ${devs} | awk -F, "{ print \\$${pci_dev_index}}"`
-			pci_node=`cat /sys/bus/pci/devices/"$pci_dev"/numa_node`
-
-			if [ "$vhost_affinity" == "local" ]; then
-				vhost_port="vhost-user-$i-n$pci_node"
-			else # use a non-local node
-				remote_pci_nodes=`sub_from_list $node_list $pci_node`
-				remote_pci_node=`echo $remote_pci_nodes | awk -F, '{print $1}'`
-				vhost_port="vhost-user-$i-n$remote_pci_node"
-			fi
-
-			echo vhost_port: $vhost_port
-			vhost_devs="$vhost_devs,$vhost_port"
-		done
-		;;
-	esac
-
-	vpp_startup_file=/etc/vpp/startup.conf
-	pmd_threads=`echo "$vpp_ports * $queues" | bc`
-	echo "devices: ${devs}$vhost_devs"
-	pmd_cpus=`get_pmd_cpus "${devs}$vhost_devs" "$queues" "vpp-pmd"`
-
-	if [ -z "$pmd_cpus" ]; then
-		exit_error "Could not allocate PMD threads.  Do you have enough isolated cpus in the right NUAM nodes?"
-	fi
-
-	#log_cpu_usage "$pmd_cpus" "vpp-pmd"
-	echo "#generated by start-vswitch" >$vpp_startup_file
-	echo "unix {" >>$vpp_startup_file
-	echo "    nodaemon" >>$vpp_startup_file
-	echo "    log /var/log/vpp.log" >>$vpp_startup_file
-	echo "    full-coredump" >>$vpp_startup_file
-
-	case "${vpp_version}" in
-		"17.10")
-		echo "    cli-listen /run/vpp/cli.sock" >>$vpp_startup_file
-		;;
-	esac
-
-	echo "}" >>$vpp_startup_file
-	echo "cpu {" >>$vpp_startup_file
-	echo "    workers $pmd_threads" >>$vpp_startup_file
-	echo "    main-core 0" >>$vpp_startup_file
-	echo "    corelist-workers $pmd_cpus" >>$vpp_startup_file
-	echo "}" >>$vpp_startup_file
-	echo "dpdk {" >>$vpp_startup_file
-	echo "    dev default {" >>$vpp_startup_file
-	echo "        num-rx-queues $queues" >>$vpp_startup_file
-	echo "        num-tx-queues $queues" >>$vpp_startup_file
-
-	if [ ! -z "${pci_desc_override}" ]; then
-		echo "overriding PCI descriptors/queue with ${pci_desc_override}"
-		echo "        num-rx-desc ${pci_desc_override}" >>$vpp_startup_file
-		echo "        num-tx-desc ${pci_desc_override}" >>$vpp_startup_file
-	else
-		echo "setting PCI descriptors/queue with ${pci_descriptors}"
-		echo "        num-rx-desc ${pci_descriptors}" >>$vpp_startup_file
-		echo "        num-tx-desc ${pci_descriptors}" >>$vpp_startup_file
-	fi
-
-	echo "    }" >>$vpp_startup_file
-	echo "    no-multi-seg" >>$vpp_startup_file
-	echo "    uio-driver vfio-pci" >>$vpp_startup_file
-	avail_devs="$devs"
-
-	for i in `seq 0 1`; do
-		pci_dev=`echo $avail_devs | awk -F, '{print $1}'`
-		avail_devs=`echo $avail_devs | sed -e s/^$pci_dev,//`
-		echo "    dev $pci_dev" >>$vpp_startup_file
-	done
-
-	echo "    num-mbufs 32768" >>$vpp_startup_file
-	echo "}" >>$vpp_startup_file
-	echo "api-trace {" >>$vpp_startup_file
-	echo "    on" >>$vpp_startup_file
-	echo "}" >>$vpp_startup_file
-	echo "api-segment {" >>$vpp_startup_file
-	echo "    gid vpp" >>$vpp_startup_file
-	echo "}" >>$vpp_startup_file
-	screen -dmS vpp /usr/bin/vpp -c /etc/vpp/startup.conf
-	echo -n "Waiting for VPP to be available"
-	vpp_wait_counter=0
-
-	case "${vpp_version}" in
-	"17.04")
-		# if a command is submitted to VPP 17.04 too quickly
-		# it might never return, so delay a bit
-		for i in `seq 1 10`; do
-			echo -n "."
-			sleep 1
-			(( vpp_wait_counter++ ))
-		done
-		;;
-	"17.10")
-		while [ ! -e /run/vpp/cli.sock -a ! -S /run/vpp/cli.sock ]; do
-			echo -n "."
-			sleep 1
-			(( vpp_wait_counter++ ))
-		done
-		;;
-	esac
-
-	echo
-	echo "Waited ${vpp_wait_counter} seconds for VPP to be available"
-	vpp_wait_counter=0
-	vpp_version_start=$(date)
-
-	while [ 1 ]; do
-		# VPP 17.04 and earlier will block here and wait until
-		# the command is accepted.  VPP 17.07 will return with
-		# an error immediately until the daemon is ready
-		vpp_version_string=$(vppctl show version 2>&1)
-		if echo ${vpp_version_string} | grep -q "FileNotFoundError\|Connection refused"; then
-			echo -n "."
-			sleep 1
-			(( vpp_wait_counter++ ))
-		else
-			echo -n "done"
-			break
-		fi
-	done
-
-	echo
-	if [ ${vpp_wait_counter} -gt 0 ]; then
-		echo "Waited ${vpp_wait_counter} seconds for VPP to return version information"
-	else
-		vpp_version_stop=$(date)
-		echo "Started waiting for VPP version at ${vpp_version_start} and finished at ${vpp_version_stop}"
-	fi
-
-	echo "VPP version: ${vpp_version_string}"
-	vpp_nics=`vppctl show interface | grep Ethernet | awk '{print $1}'`
-	echo "vpp nics: $vpp_nics"
-	avail_devs="$devs"
-
-	for i in `seq 0 1`; do
-		pci_dev=`echo $avail_devs | awk -F, '{print $1}'`
-		avail_devs=`echo $avail_devs | sed -e s/^$pci_dev,//`
-		pci_dev_bus=`echo $pci_dev | awk -F: '{print $2}'`
-		pci_dev_bus=`printf "%d" $pci_dev_bus`
-		pci_dev_dev=`echo $pci_dev | awk -F: '{print $3}' | awk -F. '{print $1}'`
-		pci_dev_dev=`printf "%d" $pci_dev_dev`
-		pci_dev_func=`echo $pci_dev | awk -F: '{print $3}' | awk -F. '{print $2}'`
-		pci_dev_func=`printf "%d" $pci_dev_func`
-		echo "vpp device: Ethernet$pci_dev_bus/$pci_dev_dev/$pci_dev_func"
-		vpp_nic[$i]=`vppctl show interface | grep Ethernet$pci_dev_bus/$pci_dev_dev/$pci_dev_func | awk '{print $1}'`
-		echo vpp NIC: ${vpp_nic[$i]}
-	done
-
-	case $topology in
-	"pp")   # 10GbP1<-->10GbP2
-		set_vpp_bridge_mode ${vpp_nic[0]} ${vpp_nic[1]} ${switch_mode} 10
-
-		case "${vpp_version}" in
-		"17.07"|"17.10")
-			vppctl set interface rx-placement ${vpp_nic[0]} queue 0 worker 0
-			vppctl set interface rx-placement ${vpp_nic[1]} queue 0 worker 1
-			;;
-		"17.04"|*)
-			vppctl set dpdk interface placement ${vpp_nic[0]} queue 0 thread 1
-			vppctl set dpdk interface placement ${vpp_nic[1]} queue 0 thread 2
-			;;
-		esac
-		;;
-	"pvp"|"pv,vp")   # 10GbP1<-->VM1P1, VM1P2<-->10GbP2
-		vpp_nic_index=2
-
-		for i in `seq 0 1`; do
-			pci_dev_index=$(( i + 1 ))
-			pci_dev=`echo ${devs} | awk -F, "{ print \\$${pci_dev_index}}"`
-			pci_node=`cat /sys/bus/pci/devices/"$pci_dev"/numa_node`
-			vpp_nic[${vpp_nic_index}]=$(vpp_create_vhost_user vhost-user-${i}-n${pci_node})
-			(( vpp_nic_index++ ))
-		done
-
-		set_vpp_bridge_mode ${vpp_nic[0]} ${vpp_nic[2]} ${switch_mode} 10
-		set_vpp_bridge_mode ${vpp_nic[1]} ${vpp_nic[3]} ${switch_mode} 20
-
-		case "${vpp_version}" in
-		"17.07"|"17.10")
-			vppctl set interface rx-placement ${vpp_nic[0]} queue 0 worker 0
-			vppctl set interface rx-placement ${vpp_nic[1]} queue 0 worker 1
-			;;
-		"17.04"|*)
-			vppctl set dpdk interface placement ${vpp_nic[0]} queue 0 thread 3
-			vppctl set dpdk interface placement ${vpp_nic[1]} queue 0 thread 4
-			;;
-		esac
-		;;
-	esac
-
-	for nic in ${vpp_nic[@]}; do
-		echo "Bringing VPP interface ${nic} online"
-		vppctl set interface state ${nic} up
-	done
-
-	# query for some configuration details
-	vppctl show interface
-	vppctl show interface address
-	vppctl show threads
-
-	case "${vpp_version}" in
-	"17.07"|"17.10")
-		vppctl show interface rx-placement
-		;;
-	"17.04"|*)
-		vppctl show dpdk interface placement
 		;;
 	esac
 	;;
@@ -1294,7 +1227,7 @@ ovs) #switch configuration
 	log "starting ovs-vswitchd"
 	case $dataplane in
 	"dpdk")
-		if echo $ovs_ver | grep -q "^2\.6\|^2\.7\|^2\.8\|^2\.9\|^2\.10"; then
+		if echo $ovs_ver | grep -q "^2\.6\|^2\.7\|^2\.8\|^2\.9\|^2\.10\|^2\.11\|^2\.12"; then
 			dpdk_opts=""
 			$ovs_bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-init=true
 
@@ -1345,7 +1278,7 @@ ovs) #switch configuration
 	$ovs_bin/ovs-vsctl --no-wait init
 
 	if [ "$dataplane" == "dpdk" ]; then
-		if echo $ovs_ver | grep -q "^2\.7\|^2\.8\|^2\.9\|^2\.10"; then
+		if echo $ovs_ver | grep -q "^2\.7\|^2\.8\|^2\.9\|^2\.10\|^2\.11\|^2\.12"; then
 			pci_devs=`get_devs_locs $devs`
 
 			ovs_dpdk_interface_0_name="dpdk-0"
@@ -1441,7 +1374,7 @@ ovs) #switch configuration
 				log "vhost_port: $vhost_port"
 				vhost_ports="$vhost_ports,$vhost_port"
 
-				if echo $ovs_ver | grep -q "^2\.7\|^2\.8\|^2\.9\|^2\.10"; then
+				if echo $ovs_ver | grep -q "^2\.7\|^2\.8\|^2\.9\|^2\.10\|^2\.11\|^2\.12"; then
 					phys_port_name="dpdk-${i}"
 					phys_port_args="options:dpdk-devargs=${pci_dev}"
 				else
@@ -1455,7 +1388,7 @@ ovs) #switch configuration
 				ifaces="$ifaces,${phys_port_name}"
 				phy_ifaces="$ifaces,${phys_port_name}"
 
-				if [ -z "$overlay" -o "$overlay" == "none" -o "$overlay" == "half-vxlan" -a $i -eq 1 ]; then
+				if [ -z "$overlay_network" -o "$overlay_network" == "none" -o "$overlay_network" == "half-vxlan" -a $i -eq 1 ]; then
 					$ovs_bin/ovs-vsctl add-port $phy_br $vhost_port -- set Interface $vhost_port type=dpdkvhostuser
 					ifaces="$ifaces,$vhost_port"
 					vhu_ifaces="$ifaces,$vhost_port"
@@ -1469,7 +1402,7 @@ ovs) #switch configuration
 					$ovs_bin/ovs-ofctl del-flows $phy_br
 					set_ovs_bridge_mode $phy_br ${switch_mode}
 				else
-					if [ "$overlay" == "vxlan" -o "$overlay" == "half-vxlan" -a $i -eq 0 ]; then
+					if [ "$overlay_network" == "vxlan" -o "$overlay_network" == "half-vxlan" -a $i -eq 0 ]; then
 						vxlan_br="vxlan-br-$i"
 						hwaddr=`echo $hwaddrs | awk '{print $1}'`
 						hwaddrs=`echo $hwaddrs | sed -e s/^$hwaddr//`
