@@ -25,13 +25,10 @@
 #	of 1 or more switches separated by commas.  The supported interfaces on 
 #	a switch are:
 #
-#	p:		A physical port
+#	p:		A physical port.  This may include host physical ports, or 
+#			SR-IOV PCIe or virtio devices seen within a guest
 #
-#	v:		A virtio-net "backend" port, like dpdkvhostuser or vhost-net (dependig on dataplane)
-#
-#	V:		A virtio-net "frontend" port, like virtio-pci in a VM (not yet implemented)
-#
-#	P:		A patch-port for OVS (not yet implemented)
+#	v:		A virtio-net interface like dpdkvhostuser or vhost-net (depending on dataplane)
 #
 topology="pp"	
 
