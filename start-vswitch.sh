@@ -226,7 +226,6 @@ cpu_usage_file="/var/log/isolated_cpu_usage.conf"
 #
 #	This locality is an assumption and must match what was configured when VMs are created
 #
-# this is a test
 vhost_affinity="local"
 
 
