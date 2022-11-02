@@ -43,8 +43,8 @@ function init_cpu_usage_file() {
 }
 
 function get_iso_cpus() {
-	local cpu
-	local list
+	local cpu=""
+	local list=""
 	for cpu in `grep -E "[0-9]+:$" $cpu_usage_file | awk -F: '{print $1}'`; do
 		list="$list,$cpu"
 	done
@@ -174,25 +174,36 @@ function sub_from_list () {
 }
 
 function intersect_cpus() {
-	local cpus_a=$1
-	local cpus_b=$2
-	local cpu_set_a
-	local cpu_set_b
-	local intersect_cpu_list=""
-	# for easier manipulation, convert the cpu list strings to a associative array
-	for i in `echo $cpus_a | sed -e 's/,/ /g'`; do
-		cpu_set_a["$i"]=1
-	done
-	for i in `echo $cpus_b | sed -e 's/,/ /g'`; do
-		cpu_set_b["$i"]=1
-	done
-	for cpu in "${!cpu_set_a[@]}"; do
-		if [ "${cpu_set_b[$cpu]}" != "" ]; then
-			intersect_cpu_list="$intersect_cpu_list,$cpu"
-		fi
-	done
-	intersect_cpu_list=`echo $intersect_cpu_list | sed -e s/^,//`
-	echo "$intersect_cpu_list"
+      local cpus_a=$1
+      local cpus_b=$2
+      local node_iso_cpus_list=""
+      declare -a cpu_set_a
+      declare -a cpu_set_b
+      declare -a intersect_cpu_list
+
+      for i in {0..512}
+       do
+            cpu_set_b[$i]=''
+            intersect_cpu_list[$i]=''
+       done
+
+      # for easier manipulation, convert the cpu list strings to a associative array
+      for i in `echo $cpus_a | sed -e 's/,/ /g'`; do
+          cpu_set_a["$i"]=1
+      done
+
+      for i in `echo $cpus_b | sed -e 's/,/ /g'`; do
+          cpu_set_b["$i"]=1
+      done
+
+      for cpu in "${!cpu_set_a[@]}"; do
+          if [ "x${cpu_set_b[$cpu]}" != "x" ]; then
+              intersect_cpu_list="$intersect_cpu_list,$cpu"
+          fi
+      done
+      intersect_cpu_list=`echo $intersect_cpu_list | sed -e s/^,//`
+      node_iso_cpus_list=`echo $intersect_cpu_list`
+      echo $node_iso_cpus_list
 }
 
 function remove_sibling_cpus() {
@@ -314,6 +325,7 @@ function get_pmd_cpus() {
 function get_cpumask() {
 	local cpu_list=$1
 	local pmd_cpu_mask=0
+    local bc_math=""
 	for cpu in `echo $cpu_list | sed -e 's/,/ /'g`; do
 		bc_math="$bc_math + 2^$cpu"
 	done

@@ -12,6 +12,8 @@
 # -configure VLAN
 # -configure a firewall
 
+set -u
+
 script_root=$(dirname $(readlink -f $0))
 . $script_root/utils/cpu_parsing.sh
 
@@ -390,8 +392,9 @@ if [ $? -ne 0 ]; then
 	printf -- "\t\t                                                   the local NUMA node, but VMs are present on another NUMA node,\n"
 	printf -- "\t\t                                                   and so the PMD threads for those virt devices are also on\n"
 	printf -- "\t\t                                                   another NUMA node.\n"
-	exit_error ""
+	exit_error "" ""
 fi
+pci_descriptor_override=""
 log "opts: [$opts]"
 eval set -- "$opts"
 log "Processing options:"
@@ -404,6 +407,7 @@ while true; do
 		;;
 		--devices)
 		shift
+        devs=""
 		if [ -n "$1" ]; then
 			for dev in `echo $1 | sed -e 's/,/ /g'`; do
 				devs="$devs,$dev"
@@ -483,7 +487,7 @@ while true; do
 			if [ $ok -eq 1 ]; then
 				log "switch: [$switch]"
 			else
-				exit_error "switch: [$switch] is not supported by this script"
+				exit_error "switch: [$switch] is not supported by this script" ""
 			fi
 		fi
 		;;
@@ -501,7 +505,7 @@ while true; do
 			testpmd_path="$1"
 			shift
 			if [ ! -e ${testpmd_path} -o ! -x "${testpmd_path}" ]; then
-				exit_error "testpmd_path: [${testpmd_path}] does not exist or is not exexecutable"
+				exit_error "testpmd_path: [${testpmd_path}] does not exist or is not exexecutable" ""
 			fi
 			log "testpmd_path: [${testpmd_path}]"
 		fi
@@ -571,7 +575,7 @@ case "${switch}" in
 			"default")
 				;;
 			*)
-				exit_error "switch=${switch} does not support switch_mode=${switch_mode}"
+				exit_error "switch=${switch} does not support switch_mode=${switch_mode}" ""
 				;;
 		esac
 		;;
@@ -580,7 +584,7 @@ case "${switch}" in
 			"default"|"direct-flow-rule"|"l2-bridge")
 				;;
 			*)
-				exit_error "switch=${switch} does not support switch_mode=${switch_mode}"
+				exit_error "switch=${switch} does not support switch_mode=${switch_mode}" ""
 				;;
 		esac
 		;;
@@ -594,13 +598,13 @@ for i in $all_deps; do
 	if which $i >/dev/null 2>&1; then
 		continue
 	else
-		exit_error "You must have the following installed to run this script: '$i'  Please install first"
+		exit_error "You must have the following installed to run this script: '$i'  Please install first" ""
 	fi
 done
 
 
 # only run if selinux is disabled
-selinuxenabled && exit_error "disable selinux before using this script"
+selinuxenabled && exit_error "disable selinux before using this script" ""
 
 # either "rpm" or "src"
 if [ "$ovs_build"="rpm" ]; then
@@ -623,11 +627,12 @@ rhel_major_version=`cat /etc/redhat-release | tr -dc '0-9.'|cut -d \. -f1`
 dev_count=0
 # make sure all of the pci devices used are exactly the same
 prev_dev_desc=""
+prev_pci_desc=""
 log "devs = $devs"
 for this_dev in `echo $devs | sed -e 's/,/ /g'`; do
 	this_pci_desc=$(get_dev_desc $this_dev)
 	if [ "$prev_pci_desc" != "" -a "$prev_pci_desc" != "$(get_dev_desc $this_dev)" ]; then
-		exit_error "PCI devices are not the exact same type: $prev_pci_desc, $this_pci_desc"
+		exit_error "PCI devices are not the exact same type: $prev_pci_desc, $this_pci_desc" ""
 	else
 		prev_pci_desc=$this_pci_desc
 		log "Using PCI device: $(lspci -s $this_dev)"
@@ -635,7 +640,7 @@ for this_dev in `echo $devs | sed -e 's/,/ /g'`; do
 	((dev_count++))
 done
 if [ $dev_count -ne 2 ]; then
-	exit_error "you must use 2 PCI devices, you used: $dev_count"
+	exit_error "you must use 2 PCI devices, you used: $dev_count" ""
 fi
 
 kernel_nic_kmod=`lspci -k -s $(get_dev_loc $this_dev) | grep "Kernel modules:" | awk -F": " '{print $2}' | sed -e s/virtio_pci/virtio-pci/`
@@ -647,7 +652,7 @@ for this_dev in `echo $devs | sed -e 's/,/ /g'`; do
 	iommu_group=`readlink /sys/bus/pci/devices/$(get_dev_loc $this_dev)/iommu_group | awk -Fiommu_groups/ '{print $2}'`
 	pids=`lsof -n -T -X | grep -- "/dev/vfio/$iommu_group" | awk '{print $2}' | sort | uniq`
 	if [ ! -z "$pids" ]; then
-		log "killing PID $pids, which is using device $pci_dev"
+		log "killing PID $pids, which is using device $this_dev"
 		kill $pids
 	fi
 done
@@ -663,7 +668,6 @@ if [ $no_kill -ne 1 ]; then
 	rm -rf $ovs_run/ovs-vswitchd.pid
 	rm -rf $ovs_run/ovsdb-server.pid
 	rm -rf $ovs_etc/*db*
-	rm -rf $ovs_var/*.log
 fi
 
 
@@ -691,11 +695,14 @@ case $dataplane in
 	done
 	log "local_socket_mem: ${local_socket_mem[@]}"
 	local_socket_mem_opt=""
+    all_socket_mem_opt=""
 	for mem in "${local_socket_mem[@]}"; do
 		log "mem: $mem"
 		local_socket_mem_opt="$local_socket_mem_opt,$mem"
 		all_socket_mem_opt="$all_socket_mem_opt,1024"
 	done
+    local_numa_nodes=""
+    local_nodes_cpus_list=""
 	for node in "${!local_socket_mem[@]}"; do
 		if [ "${local_socket_mem[$node]}" == "1024" ]; then
 			local_numa_nodes="$local_numa_nodes,$node"
@@ -725,7 +732,7 @@ case $dataplane in
 			if modprobe -v $kmod; then
 				log "loaded $kmod module"
 			else
-				exit_error "Failed to load $kmmod module, exiting"
+				exit_error "Failed to load $kmmod module, exiting" ""
 			fi
 		fi
 	done
@@ -765,13 +772,13 @@ case $dataplane in
 	eth_devs=""
 	if [ ! -e /sys/module/$kernel_nic_kmod ]; then
 		log "loading kenrel module $kernel_nic_kmod"
-		modprobe $kernel_nic_kmod || exit_error "Kernel module load failed"
+		modprobe $kernel_nic_kmod || exit_error "Kernel module load failed" ""
 	fi
 	for this_pf_loc in $(get_devs_locs $devs); do
 		dpdk-devbind --unbind $this_pf_loc
 		dpdk-devbind --bind $kernel_nic_kmod $this_pf_loc
 		if [ ! -e /sys/bus/pci/drivers/$kernel_nic_kmod/$this_pf_loc/sriov_numvfs ]; then
-			exit_error "Could not find /sys/bus/pci/drivers/$kernel_nic_kmod/$this_pf_loc/sriov_numvfs, exiting"
+			exit_error "Could not find /sys/bus/pci/drivers/$kernel_nic_kmod/$this_pf_loc/sriov_numvfs, exiting" ""
 		fi
 		log "pci $this_pf_loc num VFs:"
 		cat /sys/bus/pci/drivers/$kernel_nic_kmod/$this_pf_loc/sriov_numvfs
@@ -780,7 +787,7 @@ case $dataplane in
 			eth_dev=`/bin/ls /sys/bus/pci/devices/"$this_pf_loc"/net/ | head -1`
 			eth_devs="$eth_devs $eth_dev"
 		else
-			exit_error "Could not get kernel driver to init on device $this_pf_loc"
+			exit_error "Could not get kernel driver to init on device $this_pf_loc" ""
 		fi
 	done
 	echo ethernet devices: $eth_devs
@@ -806,7 +813,7 @@ linuxbridge) #switch configuration
 		pf_count=1
 
 		for this_dev in `echo $devs | sed -e 's/,/ /g'`; do
-			pf_eth_name=`get_pf_eth_name "$this_dev"` || exit_error "could not find a netdev name for $this_pf_location"
+			pf_eth_name=`get_pf_eth_name "$this_dev"` || exit_error "could not find a netdev name for $this_pf_location" ""
 			log "pf_eth_name: $pf_eth_name"
 			ip l set dev $pf_eth_name up
 			brctl addif $phy_br $pf_eth_name
@@ -863,7 +870,7 @@ ovs) #switch configuration
 	log "Starting the OVS configuration database process ovsdb-server and connecting to Unix socket $DB_SOCK..." 
 	$ovs_sbin/ovsdb-server -v --remote=punix:$DB_SOCK \
 	--remote=db:Open_vSwitch,Open_vSwitch,manager_options \
-	--pidfile --detach || exit_error "failed to start ovsdb"
+	--pidfile --detach || exit_error "failed to start ovsdb" ""
 	/bin/rm -f /var/log/openvswitch/ovs-vswitchd.log
 
 	log "Now intialize the OVS database using 'ovs-vsctl --no-wait init' ..."
@@ -999,7 +1006,7 @@ ovs) #switch configuration
 	esac
 
 	if [ $rc -ne 0 ]; then
-		exit_error "Aborting since openvswitch did not start correctly. Openvswitch exit code: [$rc]"
+		exit_error "Aborting since openvswitch did not start correctly. Openvswitch exit code: [$rc]" ""
 	fi
 	
 	log "waiting for ovs to init"
@@ -1121,13 +1128,13 @@ ovs) #switch configuration
 		pmdcpus=`get_pmd_cpus "$devs,$vhost_ports" $queues "ovs-pmd"`
 
 		if [ -z "$pmdcpus" ]; then
-			exit_error "Could not allocate PMD threads.  Do you have enough isolated cpus in the right NUMA nodes?"
+			exit_error "Could not allocate PMD threads.  Do you have enough isolated cpus in the right NUMA nodes?" ""
 		fi
 
 		pmd_cpu_mask=`get_cpumask $pmdcpus`
 
-		vm_cpus=`sub_from_list $ded_cpus_list $pmdcpus`
-		log "vm_cpus is [$vm_cpus]"
+		#vm_cpus=`sub_from_list $ded_cpus_list $pmdcpus`
+		#log "vm_cpus is [$vm_cpus]"
 		$ovs_bin/ovs-vsctl set Open_vSwitch . other_config:pmd-cpu-mask=$pmd_cpu_mask
 
 		#if using HT, bind 1 PF and 1 VHU to same core
@@ -1180,8 +1187,8 @@ ovs) #switch configuration
 						#((num_vfs++))
 					fi
 				done
-				echo "0" >/sys/bus/pci/devices/$this_pf_loc/sriov_numvfs || exit_error "Could not set number of VFs to 0: /sys/bus/pci/devices/$this_pf_loc/sriov_numvfs"
-				echo "$num_vfs" >/sys/bus/pci/devices/$this_pf_loc/sriov_numvfs || exit_error "Could not set number of VFs to $num_vfs: /sys/bus/pci/devices/$this_pf_loc/sriov_numvfs"
+				echo "0" >/sys/bus/pci/devices/$this_pf_loc/sriov_numvfs || exit_error "Could not set number of VFs to 0: /sys/bus/pci/devices/$this_pf_loc/sriov_numvfs" ""
+				echo "$num_vfs" >/sys/bus/pci/devices/$this_pf_loc/sriov_numvfs || exit_error "Could not set number of VFs to $num_vfs: /sys/bus/pci/devices/$this_pf_loc/sriov_numvfs" ""
 			done
 
 			log "Unbinding all the VFs from their kernel driver"
@@ -1239,7 +1246,7 @@ ovs) #switch configuration
 				if [ "$hw_tc_offload" == "off" ]; then
 					ethtool -K $dev_netdev_name hw-tc-offload on
 				fi
-				dev_sw_id=`get_switch_id $dev_netdev_name` || exit_error "  could not find a switch ID for $dev_netdev_name"
+				dev_sw_id=`get_switch_id $dev_netdev_name` || exit_error "  could not find a switch ID for $dev_netdev_name" ""
 				log "  switch ID for this device: $dev_sw_id"
 				port_id=`get_dev_port $this_dev`
 				vf_loc=`readlink /sys/bus/pci/devices/$pf_loc/virtfn$port_id | sed -e 'sX../XX'` # the PCI location of the VF
@@ -1250,7 +1257,7 @@ ovs) #switch configuration
 					vf_eth_name=`/bin/ls /sys/bus/pci/devices/"$vf_loc"/net | grep "_$port_id"`
 				fi
 				log "  netdev name for this virtual function: $vf_eth_name"
-				sd_eth_name=`get_sd_netdev_name $this_dev` || exit_error "  could not find a representor device for $this_dev ($dev_eth_name)"
+				sd_eth_name=`get_sd_netdev_name $this_dev` || exit_error "  could not find a representor device for $this_dev ($dev_eth_name)" ""
 				log "  netdev name for the switchdev (representor) device: $sd_eth_name"
 				log "  Checking if hw-tc-offload is enabled for for switchdev (representor) netdev:  $sd_eth_name"
 				hw_tc_offload=`ethtool -k $sd_eth_name | grep hw-tc-offload | awk '{print $2}'`
@@ -1287,7 +1294,7 @@ ovs) #switch configuration
 	;;
 testpmd) #switch configuration
 	if [ ! -e ${testpmd_path} -o ! -x "${testpmd_path}" ]; then
-		exit_error "testpmd_path: [${testpmd_path}] does not exist or is not exexecutable"
+		exit_error "testpmd_path: [${testpmd_path}] does not exist or is not exexecutable" ""
 	fi
 	echo "testpmd_path: [${testpmd_path}]"
 	echo configuring testpmd with $topology
@@ -1334,7 +1341,7 @@ testpmd) #switch configuration
         log "This is a test"
 
 		if [ -z "$pmd_cpus" ]; then
-			exit_error "Could not allocate PMD threads.  Do you have enough isolated cpus in the right NUAM nodes?"
+			exit_error "Could not allocate PMD threads.  Do you have enough isolated cpus in the right NUAM nodes?" ""
 		fi
 
 		pmd_cpu_mask=`get_cpumask $pmd_cpus`
@@ -1387,7 +1394,7 @@ testpmd) #switch configuration
 			pmd_cpus=`get_pmd_cpus "$pci_loc,$vhost_port" $queues "testpmd-pmd"`
             log "This is a test1"
 			if [ -z "$pmd_cpus" ]; then
-				exit_error "Could not allocate PMD threads.  Do you have enough isolated cpus in the right NUAM nodes?"
+				exit_error "Could not allocate PMD threads.  Do you have enough isolated cpus in the right NUAM nodes?" ""
 			fi
 
 			#log_cpu_usage "$pmd_cpus" "testpmd-pmd"
@@ -1421,7 +1428,7 @@ testpmd) #switch configuration
 				((count+=1))
 			done
 
-			chmod 777 $vhost_port || exit_error "could not chmod 777 $vhost_port"
+			chmod 777 $vhost_port || exit_error "could not chmod 777 $vhost_port" ""
 			#ded_cpus_list=`sub_from_list $ded_cpus_list $pmd_cpus`
 		done
 		;;
