@@ -233,8 +233,7 @@ no_kill=0
 
 
 function log() {
-    echo -e ""
-	#echo -e "start-vswitch: LINENO: ${BASH_LINENO[0]} $1"
+	echo -e "start-vswitch: LINENO: ${BASH_LINENO[0]} $1"
 }
 
 function exit_error() {

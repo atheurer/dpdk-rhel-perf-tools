@@ -1,0 +1,91 @@
+start-vswitch: opts: [ --devices '0000:3b:00.0,0000:3b:00.1' --dataplane 'dpdk' --switch 'ovs' --topology 'pv,vp' --use-ht 'y' --numa-mode 'preferred' --switch-mode 'l2-bridge' --print-config --]
+start-vswitch: Processing options:
+start-vswitch: devs: [0000:3b:00.0,0000:3b:00.1]
+start-vswitch: dataplane: [dpdk]
+start-vswitch: switch: [ovs]
+start-vswitch: topology: [pv,vp]
+start-vswitch: use_ht: [y]
+start-vswitch: numa_mode: [preferred]
+start-vswitch: switch_mode: [l2-bridge]
+
+topology = pv,vp
+queues = 1
+switch = ovs
+switch_mode = l2-bridge
+numa_mode = preferred
+ovs_build = rpm
+dpdk_nic_kmod = vfio-pci
+dataplane = dpdk
+use_ht = y
+testpmd_path = /usr/bin/testpmd
+supported_switches = linuxbridge ovs linuxrouter testpmd
+pci_descriptors = 2048
+pci_desc_override = 
+vhu_desc_override = 
+cpu_usage_file = /var/log/isolated_cpu_usage.conf
+vhost_affinity = local
+no_kill = 0
+
+start-vswitch: Validating the switch-mode l2-bridge given the switch is ovs...
+start-vswitch: switch-mode l2-bridge is valid
+start-vswitch: Determining if proper software tools are installed...
+start-vswitch: Using OVS from RPM
+start-vswitch: devs = 0000:3b:00.0,0000:3b:00.1
+start-vswitch: Using PCI device: 3b:00.0 Ethernet controller: Intel Corporation Ethernet Controller E810-C for QSFP (rev 02)
+start-vswitch: Using PCI device: 3b:00.1 Ethernet controller: Intel Corporation Ethernet Controller E810-C for QSFP (rev 02)
+start-vswitch: kernel mod: ice
+start-vswitch: Checking for an existing process using 0000:3b:00.0,0000:3b:00.1
+start-vswitch: killing PID 24464, which is using device 0000:3b:00.0
+start-vswitch: stopping ovs
+start-vswitch: stopping testpmd
+start-vswitch: Initializing devices to use DPDK as the dataplane
+start-vswitch: device 0000:3b:00.0 node is 0
+start-vswitch: device 0000:3b:00.1 node is 0
+start-vswitch: local_socket_mem: 1024
+start-vswitch: mem: 1024
+start-vswitch: mem: 0
+start-vswitch: local_numa_nodes: 0
+start-vswitch: local_socket_mem_opt: 1024,0
+start-vswitch: all_socket_mem_opt: 1024,1024
+start-vswitch: isol cpus_list is 2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95
+start-vswitch: all-nodes-non-isolated cpus list is 0,1,48,49
+start-vswitch: not loading vfio (already loaded)
+start-vswitch: loaded vfio-pci module
+start-vswitch: DPDK devs: 0000:3b:00.0,0000:3b:00.1
+start-vswitch: unbinding module from 0000:3b:00.0
+start-vswitch: binding ice to 0000:3b:00.0
+start-vswitch: taking down link on ens1f0
+start-vswitch: unbinding ice from 0000:3b:00.0
+start-vswitch: binding vfio-pci to 0000:3b:00.0
+start-vswitch: unbinding module from 0000:3b:00.1
+start-vswitch: binding ice to 0000:3b:00.1
+start-vswitch: taking down link on ens1f1
+start-vswitch: unbinding ice from 0000:3b:00.1
+start-vswitch: binding vfio-pci to 0000:3b:00.1
+start-vswitch: configuring the vswitch: ovs
+start-vswitch: starting ovs (ovs_ver=2.16.2)
+start-vswitch: Initializing the OVS configuration database at /etc/openvswitch/conf.db using 'ovsdb-tool create'...
+start-vswitch: Starting the OVS configuration database process ovsdb-server and connecting to Unix socket /var/run/openvswitch/db.sock...
+start-vswitch: Now intialize the OVS database using 'ovs-vsctl --no-wait init' ...
+start-vswitch: starting ovs-vswitchd
+start-vswitch: Using preferred NUMA configuration mode when starting OVS:
+start-vswitch: waiting for ovs to init
+start-vswitch: ovs_dpdk_interface_0_args[options:dpdk-devargs=0000:3b:00.0]
+start-vswitch: ovs_dpdk_interface_1_args[options:dpdk-devargs=0000:3b:00.1]
+start-vswitch: configuring ovs with network topology: pv,vp
+start-vswitch: vhost_port: vhost-user-0-n0
+start-vswitch: vhost_port: vhost-user-1-n0
+start-vswitch: using 1 queue(s) per port
+start-vswitch: setting PCI descriptors/queue with 2048
+start-vswitch: using a total of 4 PMD threads
+start-vswitch: PMD cpumask command: ovs-vsctl set Open_vSwitch . other_config:pmd-cpu-mask=
+start-vswitch: PMD thread assignments:
+pmd thread numa_id 1 core_id 21:
+  isolated : false
+pmd thread numa_id 0 core_id 88:
+  isolated : false
+  port: dpdk-0            queue-id:  0 (enabled)   pmd usage: NOT AVAIL
+  port: dpdk-1            queue-id:  0 (enabled)   pmd usage: NOT AVAIL
+  port: vhost-user-0-n0   queue-id:  0 (enabled)   pmd usage: NOT AVAIL
+  port: vhost-user-1-n0   queue-id:  0 (enabled)   pmd usage: NOT AVAIL
+  overhead: NOT AVAIL

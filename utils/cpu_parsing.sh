@@ -315,11 +315,7 @@ function get_pmd_cpus() {
 		done
 	done
 	pmd_cpus_list=`echo $pmd_cpus_list | sed -e 's/^,//'`
-    log ""
-    log "pmd_cpus_list = $pmd_cpus_list"
-    log ""
 	echo "$pmd_cpus_list"
-	return 0
 }
 
 function get_cpumask() {
