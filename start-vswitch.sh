@@ -1123,7 +1123,18 @@ ovs) #switch configuration
 		
 		#configure the number of PMD threads to use
 		pmd_threads=`echo "$ovs_ports * $queues" | bc`
+
 		log "using a total of $pmd_threads PMD threads"
+		pmdcpus=""
+		case $topology in
+		"pp")  # 10GbP1<-->10GbP2
+			vhost_ports=""
+		esac
+		echo "devs = $devs"
+		echo "vhost_ports = $vhost_ports"
+		echo "queues = $queues"
+		echo "pmdcpus = $pmdcpus"
+
 		pmdcpus=`get_pmd_cpus "$devs,$vhost_ports" $queues "ovs-pmd"`
 
 		if [ -z "$pmdcpus" ]; then
@@ -1138,6 +1149,8 @@ ovs) #switch configuration
 
 		#if using HT, bind 1 PF and 1 VHU to same core
 		if [ "$use_ht" == "y" ]; then
+			iface=""
+			ifaces=""
 			while [ ! -z "$pmdcpus" ]; do
 				this_cpu=`echo $pmdcpus | awk -F, '{print $1}'`
 				cpu_siblings_range=`cat /sys/devices/system/cpu/cpu$this_cpu/topology/thread_siblings_list`
@@ -1146,10 +1159,18 @@ ovs) #switch configuration
 				while [ ! -z "$cpu_siblings_list" ]; do
 				this_cpu_thread=`echo $cpu_siblings_list | awk -F, '{print $1}'`
 				cpu_siblings_list=`sub_from_list $cpu_siblings_list $this_cpu_thread`
+				echo "iface = $iface"
+				echo "ifaces = $ifaces"
 				iface=`echo $ifaces | awk -F, '{print $1}'`
 				ifaces=`echo $ifaces | sed -e s/^$iface,//`
+				echo "this_cpu_thread = $this_cpu_thread"
 				log "$ovs_bin/ovs-vsctl set Interface $iface other_config:pmd-rxq-affinity=0:$this_cpu_thread"
-				$ovs_bin/ovs-vsctl set Interface $iface other_config:pmd-rxq-affinity=0:$this_cpu_thread
+				if [ ! -z "$iface" ]; then
+					echo "BILL"
+					$ovs_bin/ovs-vsctl set Interface $iface other_config:pmd-rxq-affinity=0:$this_cpu_thread
+				else
+					echo "BILL1"
+				fi
 			done
 		done
 		fi
