@@ -1150,11 +1150,14 @@ ovs) #switch configuration
 		#if using HT, bind 1 PF and 1 VHU to same core
 		if [ "$use_ht" == "y" ]; then
 			iface=""
-			ifaces=""
+			#ifaces=""
 			while [ ! -z "$pmdcpus" ]; do
 				this_cpu=`echo $pmdcpus | awk -F, '{print $1}'`
+				echo "this_cpu = $this_cpu"
 				cpu_siblings_range=`cat /sys/devices/system/cpu/cpu$this_cpu/topology/thread_siblings_list`
+				echo "cpu_siblings_range = $cpu_siblings_range"
 				cpu_siblings_list=`convert_number_range $cpu_siblings_range`
+				echo "cpu_siblings_list = $cpu_siblings_list"
 				pmdcpus=`sub_from_list $pmdcpus $cpu_siblings_list`
 				while [ ! -z "$cpu_siblings_list" ]; do
 				this_cpu_thread=`echo $cpu_siblings_list | awk -F, '{print $1}'`
@@ -1163,6 +1166,8 @@ ovs) #switch configuration
 				echo "ifaces = $ifaces"
 				iface=`echo $ifaces | awk -F, '{print $1}'`
 				ifaces=`echo $ifaces | sed -e s/^$iface,//`
+				echo "iface = $iface"
+				echo "ifaces = $ifaces"
 				echo "this_cpu_thread = $this_cpu_thread"
 				log "$ovs_bin/ovs-vsctl set Interface $iface other_config:pmd-rxq-affinity=0:$this_cpu_thread"
 				if [ ! -z "$iface" ]; then
