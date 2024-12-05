@@ -1,0 +1,1590 @@
+Updating Subscription Management repositories.
+Last metadata expiration check: 0:06:16 ago on Wed 13 Nov 2024 10:25:37 AM EST.
+ansible-1:7.7.0-1.el9.noarch : Curated set of Ansible collections included in addition to ansible-core
+Repo        : @System
+Matched from:
+Filename    : /usr/lib/python3.9/site-packages/ansible_collections/openvswitch
+Filename    : /usr/lib/python3.9/site-packages/ansible_collections/openvswitch/openvswitch
+Filename    : /usr/share/doc/ansible/ansible_collections/openvswitch
+Filename    : /usr/share/doc/ansible/ansible_collections/openvswitch/openvswitch
+Filename    : /usr/share/licenses/ansible/ansible_collections/openvswitch
+Filename    : /usr/share/licenses/ansible/ansible_collections/openvswitch/openvswitch
+
+ansible-1:7.7.0-1.el9.noarch : Curated set of Ansible collections included in addition to ansible-core
+Repo        : epel
+Matched from:
+Filename    : /usr/lib/python3.9/site-packages/ansible_collections/openvswitch
+Filename    : /usr/lib/python3.9/site-packages/ansible_collections/openvswitch/openvswitch
+Filename    : /usr/share/doc/ansible/ansible_collections/openvswitch
+Filename    : /usr/share/doc/ansible/ansible_collections/openvswitch/openvswitch
+Filename    : /usr/share/licenses/ansible/ansible_collections/openvswitch
+Filename    : /usr/share/licenses/ansible/ansible_collections/openvswitch/openvswitch
+
+kernel-core-5.14.0-70.13.1.el9_0.x86_64 : The Linux kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-70.13.1.el9_0.x86_64/kernel/net/openvswitch
+
+kernel-core-5.14.0-70.17.1.el9_0.x86_64 : The Linux kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-70.17.1.el9_0.x86_64/kernel/net/openvswitch
+
+kernel-core-5.14.0-70.22.1.el9_0.x86_64 : The Linux kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-70.22.1.el9_0.x86_64/kernel/net/openvswitch
+
+kernel-core-5.14.0-70.26.1.el9_0.x86_64 : The Linux kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-70.26.1.el9_0.x86_64/kernel/net/openvswitch
+
+kernel-core-5.14.0-70.30.1.el9_0.x86_64 : The Linux kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-70.30.1.el9_0.x86_64/kernel/net/openvswitch
+
+kernel-core-5.14.0-162.6.1.el9_1.x86_64 : The Linux kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-162.6.1.el9_1.x86_64/kernel/net/openvswitch
+
+kernel-core-5.14.0-162.12.1.el9_1.x86_64 : The Linux kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-162.12.1.el9_1.x86_64/kernel/net/openvswitch
+
+kernel-core-5.14.0-162.18.1.el9_1.x86_64 : The Linux kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-162.18.1.el9_1.x86_64/kernel/net/openvswitch
+
+kernel-core-5.14.0-162.22.2.el9_1.x86_64 : The Linux kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-162.22.2.el9_1.x86_64/kernel/net/openvswitch
+
+kernel-core-5.14.0-162.23.1.el9_1.x86_64 : The Linux kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-162.23.1.el9_1.x86_64/kernel/net/openvswitch
+
+kernel-debug-core-5.14.0-70.13.1.el9_0.x86_64 : The Linux kernel compiled with extra debugging enabled
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-70.13.1.el9_0.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-core-5.14.0-70.17.1.el9_0.x86_64 : The Linux kernel compiled with extra debugging enabled
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-70.17.1.el9_0.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-core-5.14.0-70.22.1.el9_0.x86_64 : The Linux kernel compiled with extra debugging enabled
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-70.22.1.el9_0.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-core-5.14.0-70.26.1.el9_0.x86_64 : The Linux kernel compiled with extra debugging enabled
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-70.26.1.el9_0.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-core-5.14.0-70.30.1.el9_0.x86_64 : The Linux kernel compiled with extra debugging enabled
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-70.30.1.el9_0.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-core-5.14.0-162.6.1.el9_1.x86_64 : The Linux kernel compiled with extra debugging enabled
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-162.6.1.el9_1.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-core-5.14.0-162.12.1.el9_1.x86_64 : The Linux kernel compiled with extra debugging enabled
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-162.12.1.el9_1.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-core-5.14.0-162.18.1.el9_1.x86_64 : The Linux kernel compiled with extra debugging enabled
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-162.18.1.el9_1.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-core-5.14.0-162.22.2.el9_1.x86_64 : The Linux kernel compiled with extra debugging enabled
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-162.22.2.el9_1.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-core-5.14.0-162.23.1.el9_1.x86_64 : The Linux kernel compiled with extra debugging enabled
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-162.23.1.el9_1.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-devel-5.14.0-70.13.1.el9_0.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-70.13.1.el9_0.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-70.17.1.el9_0.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-70.17.1.el9_0.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-70.22.1.el9_0.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-70.22.1.el9_0.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-70.26.1.el9_0.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-70.26.1.el9_0.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-70.30.1.el9_0.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-70.30.1.el9_0.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-162.6.1.el9_1.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-162.6.1.el9_1.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-162.12.1.el9_1.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-162.12.1.el9_1.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-162.18.1.el9_1.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-162.18.1.el9_1.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-162.22.2.el9_1.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-162.22.2.el9_1.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-162.23.1.el9_1.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-162.23.1.el9_1.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-284.11.1.el9_2.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-284.11.1.el9_2.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-284.11.1.el9_2.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel9.2-AppStream
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-284.11.1.el9_2.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-284.18.1.el9_2.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-284.18.1.el9_2.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-284.25.1.el9_2.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-284.25.1.el9_2.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-284.30.1.el9_2.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-284.30.1.el9_2.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-362.8.1.el9_3.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-362.8.1.el9_3.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-362.13.1.el9_3.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-362.13.1.el9_3.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-362.18.1.el9_3.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-362.18.1.el9_3.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-362.24.1.el9_3.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-362.24.1.el9_3.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-427.13.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.13.1.el9_4.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-427.16.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.16.1.el9_4.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-427.18.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.18.1.el9_4.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-427.20.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.20.1.el9_4.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-427.22.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.22.1.el9_4.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-427.24.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.24.1.el9_4.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-427.26.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.26.1.el9_4.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-427.28.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.28.1.el9_4.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-427.31.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.31.1.el9_4.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-427.33.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.33.1.el9_4.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-427.35.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.35.1.el9_4.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-427.37.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.37.1.el9_4.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-427.40.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.40.1.el9_4.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-427.42.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.42.1.el9_4.x86_64+debug/net/openvswitch
+
+kernel-debug-devel-5.14.0-503.11.1.el9_5.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-503.11.1.el9_5.x86_64+debug/net/openvswitch
+
+kernel-debug-modules-core-5.14.0-284.11.1.el9_2.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-284.11.1.el9_2.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-modules-core-5.14.0-284.11.1.el9_2.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel9.2-BaseOS
+Matched from:
+Filename    : /lib/modules/5.14.0-284.11.1.el9_2.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-modules-core-5.14.0-284.18.1.el9_2.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-284.18.1.el9_2.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-modules-core-5.14.0-284.25.1.el9_2.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-284.25.1.el9_2.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-modules-core-5.14.0-284.30.1.el9_2.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-284.30.1.el9_2.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-modules-core-5.14.0-362.8.1.el9_3.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-362.8.1.el9_3.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-modules-core-5.14.0-362.13.1.el9_3.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-362.13.1.el9_3.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-modules-core-5.14.0-362.18.1.el9_3.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-362.18.1.el9_3.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-modules-core-5.14.0-362.24.1.el9_3.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-362.24.1.el9_3.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-modules-core-5.14.0-427.13.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.13.1.el9_4.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-modules-core-5.14.0-427.16.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.16.1.el9_4.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-modules-core-5.14.0-427.18.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.18.1.el9_4.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-modules-core-5.14.0-427.20.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.20.1.el9_4.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-modules-core-5.14.0-427.22.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.22.1.el9_4.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-modules-core-5.14.0-427.24.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.24.1.el9_4.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-modules-core-5.14.0-427.26.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.26.1.el9_4.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-modules-core-5.14.0-427.28.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.28.1.el9_4.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-modules-core-5.14.0-427.31.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.31.1.el9_4.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-modules-core-5.14.0-427.33.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.33.1.el9_4.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-modules-core-5.14.0-427.35.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.35.1.el9_4.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-modules-core-5.14.0-427.37.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.37.1.el9_4.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-modules-core-5.14.0-427.40.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.40.1.el9_4.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-modules-core-5.14.0-427.42.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.42.1.el9_4.x86_64+debug/kernel/net/openvswitch
+
+kernel-debug-modules-core-5.14.0-503.11.1.el9_5.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-503.11.1.el9_5.x86_64+debug/kernel/net/openvswitch
+
+kernel-devel-5.14.0-70.13.1.el9_0.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-70.13.1.el9_0.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-70.17.1.el9_0.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-70.17.1.el9_0.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-70.22.1.el9_0.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-70.22.1.el9_0.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-70.26.1.el9_0.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-70.26.1.el9_0.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-70.30.1.el9_0.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-70.30.1.el9_0.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-162.6.1.el9_1.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-162.6.1.el9_1.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-162.12.1.el9_1.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-162.12.1.el9_1.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-162.18.1.el9_1.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-162.18.1.el9_1.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-162.22.2.el9_1.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-162.22.2.el9_1.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-162.23.1.el9_1.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-162.23.1.el9_1.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-284.11.1.el9_2.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : @System
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-284.11.1.el9_2.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-284.11.1.el9_2.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-284.11.1.el9_2.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-284.11.1.el9_2.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel9.2-AppStream
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-284.11.1.el9_2.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-284.18.1.el9_2.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-284.18.1.el9_2.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-284.25.1.el9_2.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-284.25.1.el9_2.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-284.30.1.el9_2.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-284.30.1.el9_2.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-362.8.1.el9_3.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-362.8.1.el9_3.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-362.13.1.el9_3.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-362.13.1.el9_3.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-362.18.1.el9_3.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-362.18.1.el9_3.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-362.24.1.el9_3.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-362.24.1.el9_3.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-427.13.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.13.1.el9_4.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-427.16.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.16.1.el9_4.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-427.18.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : @System
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.18.1.el9_4.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-427.18.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.18.1.el9_4.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-427.20.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.20.1.el9_4.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-427.22.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.22.1.el9_4.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-427.24.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.24.1.el9_4.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-427.26.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.26.1.el9_4.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-427.28.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.28.1.el9_4.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-427.31.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.31.1.el9_4.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-427.33.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.33.1.el9_4.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-427.35.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.35.1.el9_4.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-427.37.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.37.1.el9_4.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-427.40.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.40.1.el9_4.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-427.42.1.el9_4.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-427.42.1.el9_4.x86_64/net/openvswitch
+
+kernel-devel-5.14.0-503.11.1.el9_5.x86_64 : Development package for building kernel modules to match the kernel
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/src/kernels/5.14.0-503.11.1.el9_5.x86_64/net/openvswitch
+
+kernel-modules-core-5.14.0-284.11.1.el9_2.x86_64 : Core kernel modules to match the core kernel
+Repo        : @System
+Matched from:
+Filename    : /lib/modules/5.14.0-284.11.1.el9_2.x86_64/kernel/net/openvswitch
+
+kernel-modules-core-5.14.0-284.11.1.el9_2.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-284.11.1.el9_2.x86_64/kernel/net/openvswitch
+
+kernel-modules-core-5.14.0-284.11.1.el9_2.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel9.2-BaseOS
+Matched from:
+Filename    : /lib/modules/5.14.0-284.11.1.el9_2.x86_64/kernel/net/openvswitch
+
+kernel-modules-core-5.14.0-284.18.1.el9_2.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-284.18.1.el9_2.x86_64/kernel/net/openvswitch
+
+kernel-modules-core-5.14.0-284.25.1.el9_2.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-284.25.1.el9_2.x86_64/kernel/net/openvswitch
+
+kernel-modules-core-5.14.0-284.30.1.el9_2.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-284.30.1.el9_2.x86_64/kernel/net/openvswitch
+
+kernel-modules-core-5.14.0-362.8.1.el9_3.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-362.8.1.el9_3.x86_64/kernel/net/openvswitch
+
+kernel-modules-core-5.14.0-362.13.1.el9_3.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-362.13.1.el9_3.x86_64/kernel/net/openvswitch
+
+kernel-modules-core-5.14.0-362.18.1.el9_3.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-362.18.1.el9_3.x86_64/kernel/net/openvswitch
+
+kernel-modules-core-5.14.0-362.24.1.el9_3.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-362.24.1.el9_3.x86_64/kernel/net/openvswitch
+
+kernel-modules-core-5.14.0-427.13.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.13.1.el9_4.x86_64/kernel/net/openvswitch
+
+kernel-modules-core-5.14.0-427.16.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.16.1.el9_4.x86_64/kernel/net/openvswitch
+
+kernel-modules-core-5.14.0-427.18.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : @System
+Matched from:
+Filename    : /lib/modules/5.14.0-427.18.1.el9_4.x86_64/kernel/net/openvswitch
+
+kernel-modules-core-5.14.0-427.18.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.18.1.el9_4.x86_64/kernel/net/openvswitch
+
+kernel-modules-core-5.14.0-427.20.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.20.1.el9_4.x86_64/kernel/net/openvswitch
+
+kernel-modules-core-5.14.0-427.22.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.22.1.el9_4.x86_64/kernel/net/openvswitch
+
+kernel-modules-core-5.14.0-427.24.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.24.1.el9_4.x86_64/kernel/net/openvswitch
+
+kernel-modules-core-5.14.0-427.26.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.26.1.el9_4.x86_64/kernel/net/openvswitch
+
+kernel-modules-core-5.14.0-427.28.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.28.1.el9_4.x86_64/kernel/net/openvswitch
+
+kernel-modules-core-5.14.0-427.31.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.31.1.el9_4.x86_64/kernel/net/openvswitch
+
+kernel-modules-core-5.14.0-427.33.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.33.1.el9_4.x86_64/kernel/net/openvswitch
+
+kernel-modules-core-5.14.0-427.35.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.35.1.el9_4.x86_64/kernel/net/openvswitch
+
+kernel-modules-core-5.14.0-427.37.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.37.1.el9_4.x86_64/kernel/net/openvswitch
+
+kernel-modules-core-5.14.0-427.40.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.40.1.el9_4.x86_64/kernel/net/openvswitch
+
+kernel-modules-core-5.14.0-427.42.1.el9_4.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-427.42.1.el9_4.x86_64/kernel/net/openvswitch
+
+kernel-modules-core-5.14.0-503.11.1.el9_5.x86_64 : Core kernel modules to match the core kernel
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /lib/modules/5.14.0-503.11.1.el9_5.x86_64/kernel/net/openvswitch
+
+openvswitch2.17-2.17.0-15.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch2.17-2.17.0-18.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch2.17-2.17.0-30.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch2.17-2.17.0-32.1.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch2.17-2.17.0-32.3.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch2.17-2.17.0-32.4.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch2.17-2.17.0-44.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch2.17-2.17.0-49.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch2.17-2.17.0-52.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch2.17-2.17.0-58.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch2.17-2.17.0-62.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch2.17-2.17.0-65.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch2.17-2.17.0-77.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch2.17-2.17.0-92.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch2.17-2.17.0-93.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch2.17-2.17.0-101.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch2.17-2.17.0-108.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch2.17-2.17.0-115.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch2.17-2.17.0-126.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch2.17-2.17.0-131.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch2.17-2.17.0-137.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch2.17-2.17.0-147.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch2.17-2.17.0-158.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.0-3.0.0-27.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.1-3.1.0-2.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.1-3.1.0-14.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.1-3.1.0-33.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.1-3.1.0-35.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.1-3.1.0-44.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.1-3.1.0-54.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.1-3.1.0-59.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.1-3.1.0-73.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.1-3.1.0-88.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.1-3.1.0-94.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.1-3.1.0-104.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.1-3.1.0-118.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.1-3.1.0-127.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.1-3.1.0-130.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.2-3.2.0-10.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.2-3.2.0-25.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.2-3.2.0-40.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.2-3.2.0-56.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.2-3.2.0-63.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.2-3.2.0-73.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.2-3.2.0-87.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.2-3.2.0-87.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+
+openvswitch3.3-3.3.0-2.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.3-3.3.0-13.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.3-3.3.0-30.el9fdp.x86_64 : Open vSwitch
+Repo        : @System
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.3-3.3.0-30.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.3-3.3.0-40.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.3-3.3.0-49.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+openvswitch3.4-3.4.0-1.el9fdp.x86_64 : Open vSwitch
+Repo        : fast-datapath-for-rhel-9-x86_64-rpms
+Matched from:
+Filename    : /etc/logrotate.d/openvswitch
+Filename    : /etc/sysconfig/openvswitch
+Filename    : /etc/openvswitch
+Filename    : /run/openvswitch
+Filename    : /var/lib/openvswitch
+Filename    : /var/log/openvswitch
+
+pcp-5.3.5-8.el9.x86_64 : System-level performance monitoring and performance management
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /etc/pcp/pmlogconf/openvswitch
+Filename    : /var/lib/pcp/config/pmlogconf/openvswitch
+
+pcp-5.3.7-7.el9.x86_64 : System-level performance monitoring and performance management
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /etc/pcp/pmlogconf/openvswitch
+Filename    : /var/lib/pcp/config/pmlogconf/openvswitch
+
+pcp-6.0.1-4.el9.x86_64 : System-level performance monitoring and performance management
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /etc/pcp/pmlogconf/openvswitch
+Filename    : /var/lib/pcp/config/pmlogconf/openvswitch
+
+pcp-6.0.1-4.el9.x86_64 : System-level performance monitoring and performance management
+Repo        : rhel9.2-AppStream
+Matched from:
+Filename    : /etc/pcp/pmlogconf/openvswitch
+Filename    : /var/lib/pcp/config/pmlogconf/openvswitch
+
+pcp-6.0.1-5.el9_2.x86_64 : System-level performance monitoring and performance management
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /etc/pcp/pmlogconf/openvswitch
+Filename    : /var/lib/pcp/config/pmlogconf/openvswitch
+
+pcp-6.0.5-4.el9.x86_64 : System-level performance monitoring and performance management
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /etc/pcp/pmlogconf/openvswitch
+Filename    : /var/lib/pcp/config/pmlogconf/openvswitch
+
+pcp-6.2.0-1.el9.x86_64 : System-level performance monitoring and performance management
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /etc/pcp/pmlogconf/openvswitch
+Filename    : /var/lib/pcp/config/pmlogconf/openvswitch
+
+pcp-6.2.0-2.el9_4.x86_64 : System-level performance monitoring and performance management
+Repo        : @System
+Matched from:
+Filename    : /etc/pcp/pmlogconf/openvswitch
+Filename    : /var/lib/pcp/config/pmlogconf/openvswitch
+
+pcp-6.2.0-2.el9_4.x86_64 : System-level performance monitoring and performance management
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /etc/pcp/pmlogconf/openvswitch
+Filename    : /var/lib/pcp/config/pmlogconf/openvswitch
+
+pcp-6.2.0-3.el9_4.x86_64 : System-level performance monitoring and performance management
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /etc/pcp/pmlogconf/openvswitch
+Filename    : /var/lib/pcp/config/pmlogconf/openvswitch
+
+pcp-6.2.0-5.el9_4.x86_64 : System-level performance monitoring and performance management
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /etc/pcp/pmlogconf/openvswitch
+Filename    : /var/lib/pcp/config/pmlogconf/openvswitch
+
+pcp-6.2.2-6.el9.x86_64 : System-level performance monitoring and performance management
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /etc/pcp/pmlogconf/openvswitch
+Filename    : /var/lib/pcp/config/pmlogconf/openvswitch
+
+pcp-6.2.2-7.el9_5.x86_64 : System-level performance monitoring and performance management
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /etc/pcp/pmlogconf/openvswitch
+Filename    : /var/lib/pcp/config/pmlogconf/openvswitch
+
+pcp-pmda-openvswitch-5.3.5-8.el9.x86_64 : Performance Co-Pilot (PCP) metrics for Open vSwitch
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/libexec/pcp/pmdas/openvswitch
+Filename    : /var/lib/pcp/pmdas/openvswitch
+
+pcp-pmda-openvswitch-5.3.7-7.el9.x86_64 : Performance Co-Pilot (PCP) metrics for Open vSwitch
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /usr/libexec/pcp/pmdas/openvswitch
+Filename    : /var/lib/pcp/pmdas/openvswitch
+
+pcp-pmda-openvswitch-6.0.1-4.el9.x86_64 : Performance Co-Pilot (PCP) metrics for Open vSwitch
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /etc/pcp/pmieconf/openvswitch
+Filename    : /usr/libexec/pcp/pmdas/openvswitch
+Filename    : /var/lib/pcp/config/pmieconf/openvswitch
+Filename    : /var/lib/pcp/pmdas/openvswitch
+
+pcp-pmda-openvswitch-6.0.1-4.el9.x86_64 : Performance Co-Pilot (PCP) metrics for Open vSwitch
+Repo        : rhel9.2-AppStream
+Matched from:
+Filename    : /etc/pcp/pmieconf/openvswitch
+Filename    : /usr/libexec/pcp/pmdas/openvswitch
+Filename    : /var/lib/pcp/config/pmieconf/openvswitch
+Filename    : /var/lib/pcp/pmdas/openvswitch
+
+pcp-pmda-openvswitch-6.0.1-5.el9_2.x86_64 : Performance Co-Pilot (PCP) metrics for Open vSwitch
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /etc/pcp/pmieconf/openvswitch
+Filename    : /usr/libexec/pcp/pmdas/openvswitch
+Filename    : /var/lib/pcp/config/pmieconf/openvswitch
+Filename    : /var/lib/pcp/pmdas/openvswitch
+
+pcp-pmda-openvswitch-6.0.5-4.el9.x86_64 : Performance Co-Pilot (PCP) metrics for Open vSwitch
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /etc/pcp/pmieconf/openvswitch
+Filename    : /usr/libexec/pcp/pmdas/openvswitch
+Filename    : /var/lib/pcp/config/pmieconf/openvswitch
+Filename    : /var/lib/pcp/pmdas/openvswitch
+
+pcp-pmda-openvswitch-6.2.0-1.el9.x86_64 : Performance Co-Pilot (PCP) metrics for Open vSwitch
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /etc/pcp/pmieconf/openvswitch
+Filename    : /usr/libexec/pcp/pmdas/openvswitch
+Filename    : /var/lib/pcp/config/pmieconf/openvswitch
+Filename    : /var/lib/pcp/pmdas/openvswitch
+
+pcp-pmda-openvswitch-6.2.0-2.el9_4.x86_64 : Performance Co-Pilot (PCP) metrics for Open vSwitch
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /etc/pcp/pmieconf/openvswitch
+Filename    : /usr/libexec/pcp/pmdas/openvswitch
+Filename    : /var/lib/pcp/config/pmieconf/openvswitch
+Filename    : /var/lib/pcp/pmdas/openvswitch
+
+pcp-pmda-openvswitch-6.2.0-3.el9_4.x86_64 : Performance Co-Pilot (PCP) metrics for Open vSwitch
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /etc/pcp/pmieconf/openvswitch
+Filename    : /usr/libexec/pcp/pmdas/openvswitch
+Filename    : /var/lib/pcp/config/pmieconf/openvswitch
+Filename    : /var/lib/pcp/pmdas/openvswitch
+
+pcp-pmda-openvswitch-6.2.0-5.el9_4.x86_64 : Performance Co-Pilot (PCP) metrics for Open vSwitch
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /etc/pcp/pmieconf/openvswitch
+Filename    : /usr/libexec/pcp/pmdas/openvswitch
+Filename    : /var/lib/pcp/config/pmieconf/openvswitch
+Filename    : /var/lib/pcp/pmdas/openvswitch
+
+pcp-pmda-openvswitch-6.2.2-6.el9.x86_64 : Performance Co-Pilot (PCP) metrics for Open vSwitch
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /etc/pcp/pmieconf/openvswitch
+Filename    : /usr/libexec/pcp/pmdas/openvswitch
+Filename    : /var/lib/pcp/config/pmieconf/openvswitch
+Filename    : /var/lib/pcp/pmdas/openvswitch
+
+pcp-pmda-openvswitch-6.2.2-7.el9_5.x86_64 : Performance Co-Pilot (PCP) metrics for Open vSwitch
+Repo        : rhel-9-for-x86_64-appstream-rpms
+Matched from:
+Filename    : /etc/pcp/pmieconf/openvswitch
+Filename    : /usr/libexec/pcp/pmdas/openvswitch
+Filename    : /var/lib/pcp/config/pmieconf/openvswitch
+Filename    : /var/lib/pcp/pmdas/openvswitch
+
+selinux-policy-mls-34.1.29-1.el9_0.noarch : SELinux MLS policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/mls/active/modules/100/openvswitch
+
+selinux-policy-mls-34.1.29-1.el9_0.2.noarch : SELinux MLS policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/mls/active/modules/100/openvswitch
+
+selinux-policy-mls-34.1.43-1.el9.noarch : SELinux MLS policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/mls/active/modules/100/openvswitch
+
+selinux-policy-mls-34.1.43-1.el9_1.1.noarch : SELinux MLS policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/mls/active/modules/100/openvswitch
+
+selinux-policy-mls-34.1.43-1.el9_1.2.noarch : SELinux MLS policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/mls/active/modules/100/openvswitch
+
+selinux-policy-mls-38.1.11-2.el9_2.noarch : SELinux MLS policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/mls/active/modules/100/openvswitch
+
+selinux-policy-mls-38.1.11-2.el9_2.noarch : SELinux MLS policy
+Repo        : rhel9.2-BaseOS
+Matched from:
+Filename    : /var/lib/selinux/mls/active/modules/100/openvswitch
+
+selinux-policy-mls-38.1.11-2.el9_2.2.noarch : SELinux MLS policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/mls/active/modules/100/openvswitch
+
+selinux-policy-mls-38.1.11-2.el9_2.3.noarch : SELinux MLS policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/mls/active/modules/100/openvswitch
+
+selinux-policy-mls-38.1.11-2.el9_2.4.noarch : SELinux MLS policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/mls/active/modules/100/openvswitch
+
+selinux-policy-mls-38.1.23-1.el9.noarch : SELinux MLS policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/mls/active/modules/100/openvswitch
+
+selinux-policy-mls-38.1.23-1.el9_3.1.noarch : SELinux MLS policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/mls/active/modules/100/openvswitch
+
+selinux-policy-mls-38.1.23-1.el9_3.2.noarch : SELinux MLS policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/mls/active/modules/100/openvswitch
+
+selinux-policy-mls-38.1.35-2.el9_4.noarch : SELinux MLS policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/mls/active/modules/100/openvswitch
+
+selinux-policy-mls-38.1.35-2.el9_4.2.noarch : SELinux MLS policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/mls/active/modules/100/openvswitch
+
+selinux-policy-mls-38.1.45-3.el9_5.noarch : SELinux MLS policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/mls/active/modules/100/openvswitch
+
+selinux-policy-targeted-34.1.29-1.el9_0.noarch : SELinux targeted policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/targeted/active/modules/100/openvswitch
+
+selinux-policy-targeted-34.1.29-1.el9_0.2.noarch : SELinux targeted policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/targeted/active/modules/100/openvswitch
+
+selinux-policy-targeted-34.1.43-1.el9.noarch : SELinux targeted policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/targeted/active/modules/100/openvswitch
+
+selinux-policy-targeted-34.1.43-1.el9_1.1.noarch : SELinux targeted policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/targeted/active/modules/100/openvswitch
+
+selinux-policy-targeted-34.1.43-1.el9_1.2.noarch : SELinux targeted policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/targeted/active/modules/100/openvswitch
+
+selinux-policy-targeted-38.1.11-2.el9_2.noarch : SELinux targeted policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/targeted/active/modules/100/openvswitch
+
+selinux-policy-targeted-38.1.11-2.el9_2.noarch : SELinux targeted policy
+Repo        : rhel9.2-BaseOS
+Matched from:
+Filename    : /var/lib/selinux/targeted/active/modules/100/openvswitch
+
+selinux-policy-targeted-38.1.11-2.el9_2.2.noarch : SELinux targeted policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/targeted/active/modules/100/openvswitch
+
+selinux-policy-targeted-38.1.11-2.el9_2.3.noarch : SELinux targeted policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/targeted/active/modules/100/openvswitch
+
+selinux-policy-targeted-38.1.11-2.el9_2.4.noarch : SELinux targeted policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/targeted/active/modules/100/openvswitch
+
+selinux-policy-targeted-38.1.23-1.el9.noarch : SELinux targeted policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/targeted/active/modules/100/openvswitch
+
+selinux-policy-targeted-38.1.23-1.el9_3.1.noarch : SELinux targeted policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/targeted/active/modules/100/openvswitch
+
+selinux-policy-targeted-38.1.23-1.el9_3.2.noarch : SELinux targeted policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/targeted/active/modules/100/openvswitch
+
+selinux-policy-targeted-38.1.35-2.el9_4.noarch : SELinux targeted policy
+Repo        : @System
+Matched from:
+Filename    : /var/lib/selinux/targeted/active/modules/100/openvswitch
+
+selinux-policy-targeted-38.1.35-2.el9_4.noarch : SELinux targeted policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/targeted/active/modules/100/openvswitch
+
+selinux-policy-targeted-38.1.35-2.el9_4.2.noarch : SELinux targeted policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/targeted/active/modules/100/openvswitch
+
+selinux-policy-targeted-38.1.45-3.el9_5.noarch : SELinux targeted policy
+Repo        : rhel-9-for-x86_64-baseos-rpms
+Matched from:
+Filename    : /var/lib/selinux/targeted/active/modules/100/openvswitch
+

@@ -1,0 +1,47 @@
+# ovs-appctl dpctl/show -s
+
+netdev@ovs-netdev:
+  lookups: hit:49666741 missed:0 lost:0
+  flows: 4096
+  port 0: ovs-netdev (tap)
+    RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+    TX packets:0 errors:0 dropped:0 aborted:0 carrier:0
+    collisions:0
+    RX bytes:0  TX bytes:0
+    UPCALL packets:? errors:?
+  port 1: phy-br-0 (tap)
+    RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+    TX packets:0 errors:0 dropped:940396 aborted:0 carrier:0
+    collisions:0
+    RX bytes:0  TX bytes:0
+    UPCALL packets:? errors:?
+  port 2: dpdk-0 (dpdk: dpdk-devargs=0000:21:00.0, dpdk-lsc-interrupt=false, n_rxq=1, n_rxq_desc=2048, n_txq_desc=2048)
+    RX packets:17126359146 errors:0 dropped:57185655 overruns:? frame:?
+    TX packets:13996657057 errors:0 dropped:0 aborted:? carrier:?
+    collisions:?
+    RX bytes:1027582264200 (957.0 GiB)  TX bytes:839799423420 (782.1 GiB)
+    UPCALL packets:? errors:?
+  port 3: vhost-user-0-n1 (dpdkvhostuserclient: vhost-server-path=/tmp/vhost-user-0-n1)
+    RX packets:13996657057 errors:? dropped:0 overruns:? frame:?
+    TX packets:17126320954 errors:? dropped:47703 aborted:? carrier:?
+    collisions:?
+    RX bytes:839799423420 (782.1 GiB)  TX bytes:1027579257240 (957.0 GiB)
+    UPCALL packets:? errors:?
+  port 4: phy-br-1 (tap)
+    RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+    TX packets:0 errors:0 dropped:1741952208 aborted:0 carrier:0
+    collisions:0
+    RX bytes:0  TX bytes:0
+    UPCALL packets:? errors:?
+  port 5: dpdk-1 (dpdk: dpdk-devargs=0000:21:00.1, dpdk-lsc-interrupt=false, n_rxq=1, n_rxq_desc=2048, n_txq_desc=2048)
+    RX packets:15928539052 errors:0 dropped:1255065349 overruns:? frame:?
+    TX packets:13599892844 errors:0 dropped:0 aborted:? carrier:?
+    collisions:?
+    RX bytes:955713058032 (890.1 GiB)  TX bytes:815993570640 (760.0 GiB)
+    UPCALL packets:? errors:?
+  port 6: vhost-user-1-n1 (dpdkvhostuserclient: vhost-server-path=/tmp/vhost-user-1-n1)
+    RX packets:13599892844 errors:? dropped:0 overruns:? frame:?
+    TX packets:15928491793 errors:? dropped:51879 aborted:? carrier:?
+    collisions:?
+    RX bytes:815993570640 (760.0 GiB)  TX bytes:955709507580 (890.1 GiB)
+    UPCALL packets:? errors:?

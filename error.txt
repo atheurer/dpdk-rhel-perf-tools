@@ -1,0 +1,21 @@
+sample-11
+(trial failed requirement, percent loss, direction: ->, requested: 0.002%, achieved: 0.028033812566560172%, lost packets: 63,177, trial result status: modified, trial result: fail)
+(trial failed requirement, percent loss, direction: <-, requested: 0.002%, achieved: 0.0338252767942999%, lost packets: 76,226, trial result status: modified, trial result: fail)
+(trial failed requirement, percent loss, direction: ->, requested: 0.002%, achieved: 0.03122870074547391%, lost packets: 46,918, trial result status: modified, trial result: fail)
+(trial failed requirement, percent loss, direction: <-, requested: 0.002%, achieved: 0.035754035876164714%, lost packets: 53,715, trial result status: modified, trial result: fail)
+sample-12
+(trial failed requirement, percent loss, direction: ->, requested: 0.002%, achieved: 25.02564696485623%, lost packets: 56,397,798, trial result status: modified, trial result: fail)
+(trial failed requirement, percent loss, direction: <-, requested: 0.002%, achieved: 74.99279217103128%, lost packets: 168,997,895, trial result status: modified, trial result: fail)
+(trial failed requirement, percent loss, direction: ->, requested: 0.002%, achieved: 25.040014643237487%, lost packets: 37,620,118, trial result status: modified, trial result: fail)
+(trial failed requirement, percent loss, direction: <-, requested: 0.002%, achieved: 75.01251041802648%, lost packets: 112,694,886, trial result status: modified, trial result: fail)
+sample-13
+(trial failed requirement, percent loss, direction: ->, requested: 0.002%, achieved: 99.9891387113951%, lost packets: 225,335,523, trial result status: modified, trial result: fail)
+(trial failed requirement, percent loss, direction: <-, requested: 0.002%, achieved: 99.99632175741417%, lost packets: 225,343,895, trial result status: modified, trial result: fail)
+(trial failed requirement, percent loss, direction: ->, requested: 0.002%, achieved: 100.0%, lost packets: 150,240,000, trial result status: modified, trial result: fail)
+(trial failed requirement, percent loss, direction: <-, requested: 0.002%, achieved: 100.0%, lost packets: 150,234,788, trial result status: modified, trial result: fail)
+sample-14
+(trial failed requirement, percent loss, direction: ->, requested: 0.002%, achieved: 100.0%, lost packets: 225,360,000, trial result status: modified, trial result: fail)
+(trial failed requirement, percent loss, direction: <-, requested: 0.002%, achieved: 99.99999955625015%, lost packets: 225,352,183, trial result status: modified, trial result: fail)
+(trial failed requirement, percent loss, direction: ->, requested: 0.002%, achieved: 100.0%, lost packets: 150,240,000, trial result status: modified, trial result: fail)
+(trial failed requirement, percent loss, direction: <-, requested: 0.002%, achieved: 100.0%, lost packets: 150,234,788, trial result status: modified, trial result: fail)
+

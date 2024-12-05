@@ -1,0 +1,84 @@
+start-vswitch: LINENO: 418 opts: [ --devices '0000:21:00.0,0000:21:00.1' --dataplane 'dpdk' --dpdk-nic-kmod 'mlx5_core' --switch 'ovs' --topology 'pvp' --use-ht 'y' --numa-mode 'strict' --switch-mode 'l2-bridge' --nr-queues '1' --use-ovs-systemd-services '1' --no-kill --]
+start-vswitch: LINENO: 420 Processing options:
+start-vswitch: LINENO: 436 devs: [0000:21:00.0,0000:21:00.1]
+start-vswitch: LINENO: 476 dataplane: [dpdk]
+start-vswitch: LINENO: 554 dpdk_nic_kmod: [mlx5_core]
+start-vswitch: LINENO: 508 switch: [ovs]
+start-vswitch: LINENO: 468 topology: [pvp]
+start-vswitch: LINENO: 460 use_ht: [y]
+start-vswitch: LINENO: 538 numa_mode: [strict]
+start-vswitch: LINENO: 519 switch_mode: [l2-bridge]
+start-vswitch: LINENO: 452 nr_queues: [1]
+start-vswitch: LINENO: 570 use_ovs_systemd_services: [1]
+start-vswitch: LINENO: 426 no_kill: [1]
+start-vswitch: LINENO: 609 Validating the switch-mode l2-bridge given the switch is ovs...
+start-vswitch: LINENO: 630 switch-mode l2-bridge is valid
+start-vswitch: LINENO: 634 BILL - num_system_cpus = 256
+start-vswitch: LINENO: 637 Determining if proper software tools are installed...
+start-vswitch: LINENO: 657 Using OVS from RPM
+start-vswitch: LINENO: 673 devs = 0000:21:00.0,0000:21:00.1
+start-vswitch: LINENO: 680 Using PCI device: 21:00.0 Ethernet controller: Mellanox Technologies MT2910 Family [ConnectX-7]
+start-vswitch: LINENO: 680 Using PCI device: 21:00.1 Ethernet controller: Mellanox Technologies MT2910 Family [ConnectX-7]
+start-vswitch: LINENO: 689 kernel mod: mlx5_core
+start-vswitch: LINENO: 692 Checking for an existing process using 0000:21:00.0,0000:21:00.1
+start-vswitch: LINENO: 719 Initializing devices to use DPDK as the dataplane
+start-vswitch: LINENO: 735 device 0000:21:00.0 node is 2
+start-vswitch: LINENO: 735 device 0000:21:00.1 node is 2
+start-vswitch: LINENO: 738 local_socket_mem: 0
+start-vswitch: LINENO: 742 mem: 0
+start-vswitch: LINENO: 742 mem: 0
+start-vswitch: LINENO: 742 mem: 1024
+start-vswitch: LINENO: 742 mem: 0
+start-vswitch: LINENO: 742 mem: 0
+start-vswitch: LINENO: 742 mem: 0
+start-vswitch: LINENO: 742 mem: 0
+start-vswitch: LINENO: 742 mem: 0
+start-vswitch: LINENO: 757 local_numa_nodes: 2
+start-vswitch: LINENO: 759 local_socket_mem_opt: 0,0,1024,0,0,0,0,0
+start-vswitch: LINENO: 761 all_socket_mem_opt: 1024,1024,1024,1024,1024,1024,1024,1024
+start-vswitch: LINENO: 766 isol cpus_list is 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255
+start-vswitch: LINENO: 767 all-nodes-non-isolated cpus list is 0,16,32,48,64,80,96,112,128,144,160,176,192,208,224,240
+start-vswitch: LINENO: 772 not loading vfio (already loaded)
+start-vswitch: LINENO: 775 loaded vfio-pci module
+start-vswitch: LINENO: 782 DPDK devs: 0000:21:00.0,0000:21:00.1
+start-vswitch: LINENO: 787 unbinding module from 0000:21:00.0
+start-vswitch: LINENO: 789 binding mlx5_core to 0000:21:00.0
+start-vswitch: LINENO: 794 taking down link on ens1f0np0
+start-vswitch: LINENO: 805 unbinding mlx5_core from 0000:21:00.0
+start-vswitch: LINENO: 807 binding mlx5_core to 0000:21:00.0
+start-vswitch: LINENO: 787 unbinding module from 0000:21:00.1
+start-vswitch: LINENO: 789 binding mlx5_core to 0000:21:00.1
+start-vswitch: LINENO: 794 taking down link on ens1f1np1
+start-vswitch: LINENO: 805 unbinding mlx5_core from 0000:21:00.1
+start-vswitch: LINENO: 807 binding mlx5_core to 0000:21:00.1
+start-vswitch: LINENO: 840 configuring the vswitch: ovs
+start-vswitch: LINENO: 923 Using systemd services to initialize OVS database and server daemon
+start-vswitch: LINENO: 974 Starting with --dpdk option
+start-vswitch: LINENO: 1075 waiting for ovs to init
+start-vswitch: LINENO: 1100 configuring ovs with network topology: pvp
+start-vswitch: LINENO: 1122 vhost_port: vhost-user-0-n2
+start-vswitch: LINENO: 1122 vhost_port: vhost-user-1-n2
+start-vswitch: LINENO: 1176 using 1 queue(s) per port
+start-vswitch: LINENO: 1187 setting PCI descriptors/queue with 2048
+start-vswitch: LINENO: 1197 using a total of 4 PMD threads
+start-vswitch: LINENO: 1204 BILL3
+devs = 0000:21:00.0,0000:21:00.1
+vhost_ports = vhost-user-0-n2,vhost-user-1-n2
+queues = 1
+start-vswitch: LINENO: 1219 BILL pmd_cpu_mask = 60000000000000000000000000000000600000000
+this_cpu = 33
+cpu_siblings_range = 33,161
+cpu_siblings_list = 33,161
+this_cpu_thread = 33
+start-vswitch: LINENO: 1240 /usr/bin/ovs-vsctl set Interface dpdk0 other_config:pmd-rxq-affinity=0:33
+this_cpu_thread = 161
+start-vswitch: LINENO: 1240 /usr/bin/ovs-vsctl set Interface vhost-user-0-n2 other_config:pmd-rxq-affinity=0:161
+this_cpu = 34
+cpu_siblings_range = 34,162
+cpu_siblings_list = 34,162
+this_cpu_thread = 34
+start-vswitch: LINENO: 1240 /usr/bin/ovs-vsctl set Interface dpdk1 other_config:pmd-rxq-affinity=0:34
+this_cpu_thread = 162
+start-vswitch: LINENO: 1240 /usr/bin/ovs-vsctl set Interface vhost-user-1-n2 other_config:pmd-rxq-affinity=0:162
+start-vswitch: LINENO: 1249 PMD thread assignments:
+Displaying last 60 seconds pmd usage %

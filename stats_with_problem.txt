@@ -1,0 +1,39 @@
+
+# ovs-appctl dpctl/show -s
+
+netdev@ovs-netdev:
+  lookups: hit:0 missed:32 lost:0
+  flows: 1
+  port 0: ovs-netdev (tap)
+    RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+    TX packets:0 errors:0 dropped:0 aborted:0 carrier:0
+    collisions:0
+    RX bytes:0  TX bytes:0
+    UPCALL packets:? errors:?
+  port 1: phy-br-0 (tap)
+    RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+    TX packets:0 errors:0 dropped:937062 aborted:0 carrier:0
+    collisions:0
+    RX bytes:0  TX bytes:0
+    UPCALL packets:? errors:?
+  port 2: dpdk-0 (dpdk: dpdk-devargs=0000:21:00.0, dpdk-lsc-interrupt=false, n_rxq=1, n_rxq_desc=2048, n_txq_desc=2048)
+    RX packets:16754876303 errors:0 dropped:57185655 overruns:? frame:?
+    TX packets:13996654815 errors:0 dropped:0 aborted:? carrier:?
+    collisions:?
+    RX bytes:1005293288868 (936.3 GiB)  TX bytes:839799288900 (782.1 GiB)
+    UPCALL packets:? errors:?
+  port 3: vhost-user-0-n1 (dpdkvhostuserclient: vhost-server-path=/tmp/vhost-user-0-n1)
+, could not retrieve stats (Protocol error)  port 4: phy-br-1 (tap)
+    RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+    TX packets:0 errors:0 dropped:1516717571 aborted:0 carrier:0
+    collisions:0
+    RX bytes:0  TX bytes:0
+    UPCALL packets:? errors:?
+  port 5: dpdk-1 (dpdk: dpdk-devargs=0000:21:00.1, dpdk-lsc-interrupt=false, n_rxq=1, n_rxq_desc=2048, n_txq_desc=2048)
+    RX packets:15703303529 errors:0 dropped:1108806307 overruns:? frame:?
+    TX packets:13599892844 errors:0 dropped:0 aborted:? carrier:?
+    collisions:?
+    RX bytes:942198922164 (877.5 GiB)  TX bytes:815993570640 (760.0 GiB)
+    UPCALL packets:? errors:?
+  port 6: vhost-user-1-n1 (dpdkvhostuserclient: vhost-server-path=/tmp/vhost-user-1-n1)
+, could not retrieve stats (Protocol error)

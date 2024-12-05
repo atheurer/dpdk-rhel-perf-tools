@@ -1,0 +1,2 @@
+local_nodes_non_iso_cpus_list = 32,160
+mask_all_nodes_non_iso_cpus_list = 10000000000000000000000000000000100000000
